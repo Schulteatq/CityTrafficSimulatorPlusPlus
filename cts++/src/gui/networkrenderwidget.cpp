@@ -123,9 +123,9 @@ namespace cts { namespace gui
 		if (e->modifiers() & Qt::ControlModifier)
 		{
 			vec2 mousePosition(e->pos().x(), e->pos().y());
-			vec2 oldPosition = (mousePosition *  m_zoomFactor) + m_zoomOffset;
-			m_zoomFactor *= 1 + (double(e->delta()) / 1200);
-			m_zoomOffset = oldPosition - (mousePosition * m_zoomFactor);
+			vec2 worldPosition = windowToWorld(e->pos());
+			m_zoomFactor *= 1.0 + (double(e->delta()) / 1200);
+			m_zoomOffset = mousePosition - (worldPosition * m_zoomFactor);
 
 			e->accept();
 			update();

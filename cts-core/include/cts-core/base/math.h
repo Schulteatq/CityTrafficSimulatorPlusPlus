@@ -10,7 +10,11 @@ namespace cts
 
 	namespace math
 	{
-		CTS_CORE_API double distance(const vec2& lhs, const vec2 rhs);
+		inline double distance(const vec2& lhs, const vec2 rhs)
+		{
+			return (lhs - rhs).norm();
+		}
+
 
 		template<typename T>
 		T clamp(T value, T min, T max)

@@ -2,8 +2,6 @@
 #define CTS_CORE_INTERSECTION_H__
 
 #include <cts-core/coreapi.h>
-#include <cts-core/network/connection.h>
-#include <cts-core/network/node.h>
 
 #include <memory>
 #include <vector>

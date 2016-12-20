@@ -16,6 +16,12 @@ namespace cts { namespace core
 	class CTS_CORE_API Network
 	{
 	public:
+		using NodeListType = std::vector< std::unique_ptr<Node> >;
+		using ConnectionListType = std::vector< std::unique_ptr<Connection> >;
+		using VehicleListType = std::vector< std::unique_ptr<AbstractVehicle> >;
+		using IntersectionListType = std::vector<Intersection>;
+
+
 		Network();
 
 		~Network();
@@ -31,19 +37,18 @@ namespace cts { namespace core
 		Connection* addConnection(Node& startNode, Node& endNode);
 
 
-		const std::vector< std::unique_ptr<Node> >& getNodes() const;
-		const std::vector< std::unique_ptr<Connection> >& getConnections() const;
-		const std::vector< std::unique_ptr<AbstractVehicle> >& getVehicles() const;
-		const std::vector<Intersection>& getIntersections() const;
+		const NodeListType& getNodes() const;
+		const ConnectionListType& getConnections() const;
+		const VehicleListType& getVehicles() const;
+		const IntersectionListType& getIntersections() const;
 
 	private:
-		std::vector<Intersection> computeIntersections(Connection& connection, double tolerance);
+		std::vector<Intersection> computeIntersections(Connection& connection, ConnectionListType::iterator start, ConnectionListType::iterator end, double tolerance);
 
-		std::vector< std::unique_ptr<Node> > m_nodes;
-		std::vector< std::unique_ptr<Connection> > m_connections;
-		std::vector< std::unique_ptr<AbstractVehicle> > m_vehicles;
-
-		std::vector<Intersection> m_intersections;
+		NodeListType m_nodes;
+		ConnectionListType m_connections;
+		VehicleListType m_vehicles;
+		IntersectionListType m_intersections;
 
 		std::string m_title;
 		std::string m_description;

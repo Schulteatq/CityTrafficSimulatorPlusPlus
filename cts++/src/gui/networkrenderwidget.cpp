@@ -146,11 +146,11 @@ namespace cts { namespace gui
 		QBrush connectionBrush(Qt::gray);
 		for (auto& connection : m_network->getConnections())
 		{
-			QPainterPath path(QPointF(connection->getParameterization().getSupportPoints()[0].x(), connection->getParameterization().getSupportPoints()[0].y()));
+			QPainterPath path(QPointF(connection->getCurve().getSupportPoints()[0].x(), connection->getCurve().getSupportPoints()[0].y()));
 			path.cubicTo(
-				connection->getParameterization().getSupportPoints()[1].x(), connection->getParameterization().getSupportPoints()[1].y(),
-				connection->getParameterization().getSupportPoints()[2].x(), connection->getParameterization().getSupportPoints()[2].y(),
-				connection->getParameterization().getSupportPoints()[3].x(), connection->getParameterization().getSupportPoints()[3].y()
+				connection->getCurve().getSupportPoints()[1].x(), connection->getCurve().getSupportPoints()[1].y(),
+				connection->getCurve().getSupportPoints()[2].x(), connection->getCurve().getSupportPoints()[2].y(),
+				connection->getCurve().getSupportPoints()[3].x(), connection->getCurve().getSupportPoints()[3].y()
 				);
 			p.setPen(QPen(connectionBrush, connection->getPriority()));
 			p.drawPath(path);
@@ -174,11 +174,11 @@ namespace cts { namespace gui
 			for (auto& segment : m_routing->getSegments())
 			{
 				auto connection = segment.startNode->getConnectionTo(*segment.targetNode);
-				QPainterPath path(QPointF(connection->getParameterization().getSupportPoints()[0].x(), connection->getParameterization().getSupportPoints()[0].y()));
+				QPainterPath path(QPointF(connection->getCurve().getSupportPoints()[0].x(), connection->getCurve().getSupportPoints()[0].y()));
 				path.cubicTo(
-					connection->getParameterization().getSupportPoints()[1].x(), connection->getParameterization().getSupportPoints()[1].y(),
-					connection->getParameterization().getSupportPoints()[2].x(), connection->getParameterization().getSupportPoints()[2].y(),
-					connection->getParameterization().getSupportPoints()[3].x(), connection->getParameterization().getSupportPoints()[3].y()
+					connection->getCurve().getSupportPoints()[1].x(), connection->getCurve().getSupportPoints()[1].y(),
+					connection->getCurve().getSupportPoints()[2].x(), connection->getCurve().getSupportPoints()[2].y(),
+					connection->getCurve().getSupportPoints()[3].x(), connection->getCurve().getSupportPoints()[3].y()
 					);
 
 				p.drawPath(path);
@@ -203,17 +203,18 @@ namespace cts { namespace gui
 		p.setBrush(Qt::NoBrush);
 		for (auto& intersection : m_network->getIntersections())
 		{
-			const core::BezierParameterization& ap = intersection.getFirstConnection().getParameterization();
-			const core::BezierParameterization& bp = intersection.getSecondConnection().getParameterization();
-			QPointF surroundingPoints[4]
+			const core::BezierParameterization& ap = intersection.getFirstConnection().getCurve();
+			const core::BezierParameterization& bp = intersection.getSecondConnection().getCurve();
+			QPointF surroundingPoints[5]
 			{
 				toQt(ap.arcPositionToCoordinate(intersection.getFirstArcPosition() + intersection.getWaitingDistance())),
 				toQt(bp.arcPositionToCoordinate(intersection.getSecondArcPosition() + intersection.getWaitingDistance())),
 				toQt(ap.arcPositionToCoordinate(intersection.getFirstArcPosition() - intersection.getWaitingDistance())),
-				toQt(bp.arcPositionToCoordinate(intersection.getSecondArcPosition() - intersection.getWaitingDistance()))
+				toQt(bp.arcPositionToCoordinate(intersection.getSecondArcPosition() - intersection.getWaitingDistance())),
+				toQt(ap.arcPositionToCoordinate(intersection.getFirstArcPosition() + intersection.getWaitingDistance()))
 			};
 
-			p.drawPolyline(surroundingPoints, 4);
+			p.drawPolyline(surroundingPoints, 5);
 		}
 	}
 

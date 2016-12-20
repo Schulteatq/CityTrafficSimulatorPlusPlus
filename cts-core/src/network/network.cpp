@@ -73,9 +73,9 @@ namespace cts { namespace core
 		}
 
 
-		for (auto& connection : m_connections)
+		for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
 		{
-			auto ints = computeIntersections(*connection, 4);
+			auto ints = computeIntersections(**it, it, m_connections.end(), 1);
 			m_intersections.insert(m_intersections.end(), ints.begin(), ints.end());
 		}
 	}
@@ -132,7 +132,7 @@ namespace cts { namespace core
 			double endTime;
 		};
 
-		void computeIntersectionHelper(const Connection& lConn, const Connection& rConn, const ParameterizationInfo& lhs, const ParameterizationInfo& rhs, std::vector<Intersection>& output, double tolerance)
+		void computeIntersectionHelper(const Connection& lConn, const Connection& rConn, const ParameterizationInfo& lhs, const ParameterizationInfo& rhs, std::vector< std::pair<double, double> >& output, double tolerance)
 		{
 			const Bounds2& otherBounds = rhs.parameterization->getBounds();
 			if (lhs.parameterization->getBounds().intersects(otherBounds))
@@ -145,15 +145,16 @@ namespace cts { namespace core
 				}
 				else
 				{
-					output.emplace_back(lConn, lhs.startTime + (lhs.endTime - lhs.startTime) / 2.0, rConn, centerTime);
+					output.emplace_back(lhs.startTime + (lhs.endTime - lhs.startTime), centerTime);
+					//output.emplace_back(lConn, lhs.startTime + (lhs.endTime - lhs.startTime) / 2.0, rConn, centerTime);
 				}
 			}
 		}
 	}
 
-	std::vector<Intersection> Network::computeIntersections(Connection& connection, double tolerance)
+	std::vector<Intersection> Network::computeIntersections(Connection& connection, ConnectionListType::iterator start, ConnectionListType::iterator end, double tolerance)
 	{
-		std::vector<ParameterizationInfo> bigParts{ { &connection.getParameterization(), 0.0, 1.0 } };
+		std::vector<ParameterizationInfo> bigParts{ { &connection.getCurve(), 0.0, 1.0 } };
 		std::vector<ParameterizationInfo> smallParts;
 		while (!bigParts.empty())
 		{
@@ -171,25 +172,58 @@ namespace cts { namespace core
 			}
 		}
 
+		// Collect all possible intersections in terms of parameterization times
 		std::vector<Intersection> toReturn;
-		for (auto& rConn : m_connections)
+		std::vector< std::pair<double, double> > intersectionTimes;
+		for (/**/; start != end; ++start)
 		{
+			auto& rConn = *start;
 			if (rConn.get() == &connection)
 				continue;
 
-			auto incomingConnections = connection.getStartNode().getIncomingConnections();
-			auto outgoingConnections = connection.getEndNode().getOutgoingConnections();
+			intersectionTimes.clear();
+			const auto& incomingConnections = connection.getStartNode().getIncomingConnections();
+			const auto& outgoingConnections = connection.getEndNode().getOutgoingConnections();
 			if (std::find(incomingConnections.begin(), incomingConnections.end(), rConn.get()) != incomingConnections.end())
 				continue;
 			if (std::find(outgoingConnections.begin(), outgoingConnections.end(), rConn.get()) != outgoingConnections.end())
 				continue;
 
-			ParameterizationInfo rPart{ &rConn->getParameterization(), 0.0, 1.0 };
+			ParameterizationInfo rPart{ &rConn->getCurve(), 0.0, 1.0 };
 			for (auto& lPart : smallParts)
 			{
-				computeIntersectionHelper(connection, *rConn, lPart, rPart, toReturn, tolerance);
+				computeIntersectionHelper(connection, *rConn, lPart, rPart, intersectionTimes, tolerance);
 			}
+
+			if (intersectionTimes.empty())
+				continue;
+
+			// merge intersections that are very close to each other
+			std::sort(intersectionTimes.begin(), intersectionTimes.end(), [](const std::pair<double, double>& lhs, const std::pair<double, double>& rhs) {
+				return lhs.first < rhs.first;
+			});
+
+			size_t startIndex = 0;
+			double startArcPos = connection.getCurve().timeToArcPosition(intersectionTimes[0].first);
+			double lastArcPos = startArcPos;
+			for (size_t i = 1; i < intersectionTimes.size(); ++i)
+			{
+				const double currentArcPos = connection.getCurve().timeToArcPosition(intersectionTimes[i].first);
+				if (currentArcPos - lastArcPos > 42 || i+1 == intersectionTimes.size()) // FIXME: make constant configurable
+				{
+					toReturn.emplace_back(connection, intersectionTimes[startIndex].first + (intersectionTimes[i-1].first - intersectionTimes[startIndex].first) / 2.0, *rConn, intersectionTimes[startIndex + (i - 1 - startIndex) / 2].second);
+					startIndex = i;
+					startArcPos = currentArcPos;
+					lastArcPos = currentArcPos;
+				}
+				else
+				{
+					lastArcPos = currentArcPos;
+				}
+			}
+
 		}
+
 		return toReturn;
 	}
 

@@ -1,4 +1,6 @@
+#include <cts-core/network/connection.h>
 #include <cts-core/network/intersection.h>
+#include <cts-core/network/node.h>
 
 
 namespace cts { namespace core
@@ -10,8 +12,8 @@ namespace cts { namespace core
 		, m_bConnection(&bConnection)
 		, m_aTime(aTime)
 		, m_bTime(bTime)
-		, m_aArcPosition(m_aConnection->getParameterization().timeToArcPosition(m_aTime))
-		, m_bArcPosition(m_bConnection->getParameterization().timeToArcPosition(m_bTime))
+		, m_aArcPosition(m_aConnection->getCurve().timeToArcPosition(m_aTime))
+		, m_bArcPosition(m_bConnection->getCurve().timeToArcPosition(m_bTime))
 		, m_waitingDistance(0.0)
 	{
 		const double stepSize = 8.0;
@@ -21,7 +23,7 @@ namespace cts { namespace core
 		double aArcPos = m_aArcPosition;
 		double bArcPos = m_bArcPosition;
 		double frontWaitingDistance = 0.0;
-		while (math::distance(m_aConnection->getParameterization().arcPositionToCoordinate(aArcPos), m_bConnection->getParameterization().arcPositionToCoordinate(bArcPos)) < 22.0
+		while (math::distance(m_aConnection->getCurve().arcPositionToCoordinate(aArcPos), m_bConnection->getCurve().arcPositionToCoordinate(bArcPos)) < 22.0
 			&& aArcPos > 0 && bArcPos > 0)
 		{
 			aArcPos -= stepSize;
@@ -32,8 +34,8 @@ namespace cts { namespace core
 		aArcPos = m_aArcPosition;
 		bArcPos = m_bArcPosition;
 		double rearWaitingDistance = 0.0;
-		while (math::distance(m_aConnection->getParameterization().arcPositionToCoordinate(aArcPos), m_bConnection->getParameterization().arcPositionToCoordinate(bArcPos)) < 22.0
-			&& aArcPos < m_aConnection->getParameterization().getArcLength() && bArcPos < m_bConnection->getParameterization().getArcLength())
+		while (math::distance(m_aConnection->getCurve().arcPositionToCoordinate(aArcPos), m_bConnection->getCurve().arcPositionToCoordinate(bArcPos)) < 22.0
+			&& aArcPos < m_aConnection->getCurve().getArcLength() && bArcPos < m_bConnection->getCurve().getArcLength())
 		{
 			aArcPos += stepSize;
 			bArcPos += stepSize;
@@ -88,13 +90,13 @@ namespace cts { namespace core
 
 	vec2 Intersection::getFirstCoordinate() const
 	{
-		return m_aConnection->getParameterization().timeToCoordinate(m_aTime);
+		return m_aConnection->getCurve().timeToCoordinate(m_aTime);
 	}
 
 
 	vec2 Intersection::getSecondCoordinate() const
 	{
-		return m_bConnection->getParameterization().timeToCoordinate(m_bTime);
+		return m_bConnection->getCurve().timeToCoordinate(m_bTime);
 	}
 
 

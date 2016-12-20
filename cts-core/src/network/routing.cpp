@@ -104,7 +104,7 @@ namespace cts { namespace core
 
 				// The following computation of the cost function is hand-crafted and taken from the original C# implementation of CTS...
 				// Base costs are the the arc length of the connection
-				double connectionCosts = conn->getParameterization().getArcLength();
+				double connectionCosts = conn->getCurve().getArcLength();
 				// If the connection is congested, we induce a penalty, however only for the next two connections (otherwise the AI would not be able to know about that)
 				if (ole->numParents < 3)
 					connectionCosts += conn->getVehicles().size() * VehicleOnRoutePenalty;

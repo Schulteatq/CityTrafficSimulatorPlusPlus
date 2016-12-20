@@ -10,19 +10,13 @@ namespace cts { namespace core
 	Connection::Connection(const Node& startNode, const Node& endNode)
 		: m_startNode(startNode)
 		, m_endNode(endNode)
-		, m_parameterization(startNode.getPosition(), startNode.getPosition() + startNode.getOutSlope(), endNode.getPosition() + endNode.getInSlope(), endNode.getPosition())
+		, m_curve(startNode.getPosition(), startNode.getPosition() + startNode.getOutSlope(), endNode.getPosition() + endNode.getInSlope(), endNode.getPosition())
 		, m_targetVelocity(10.0)
 	{
 
 	}
 
-
-	Connection::~Connection()
-	{
-
-	}
-
-
+	
 	const Node& Connection::getStartNode() const
 	{
 		return m_startNode;
@@ -35,9 +29,9 @@ namespace cts { namespace core
 	}
 
 
-	const BezierParameterization& Connection::getParameterization() const
+	const BezierParameterization& Connection::getCurve() const
 	{
-		return m_parameterization;
+		return m_curve;
 	}
 
 

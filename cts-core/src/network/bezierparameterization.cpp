@@ -88,7 +88,7 @@ namespace core
 	{
 		if (time <= 0.0)
 			return 0.0;
-		if (time >= m_lengthApproximationTable.back())
+		if (time >= 1.0)
 			return m_lengthApproximationTable.back();
 
 		int index = int(time * (LengthApproximationTableSize - 1));

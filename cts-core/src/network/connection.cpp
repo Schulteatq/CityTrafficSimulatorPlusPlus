@@ -10,7 +10,8 @@ namespace cts { namespace core
 	Connection::Connection(const Node& startNode, const Node& endNode)
 		: m_startNode(startNode)
 		, m_endNode(endNode)
-		, m_curve(startNode.getPosition(), startNode.getPosition() + startNode.getOutSlope(), endNode.getPosition() + endNode.getInSlope(), endNode.getPosition())
+		, m_curve(startNode.getPosition(), startNode.getPosition() + startNode.getOutSlope(), endNode.getPosition() - endNode.getInSlope(), endNode.getPosition())
+		, m_priority(1)
 		, m_targetVelocity(10.0)
 	{
 
@@ -64,6 +65,11 @@ namespace cts { namespace core
 		m_targetVelocity = value;
 	}
 
+
+	void Connection::updateCurve()
+	{
+		m_curve = BezierParameterization(m_startNode.getPosition(), m_startNode.getPosition() + m_startNode.getOutSlope(), m_endNode.getPosition() - m_endNode.getInSlope(), m_endNode.getPosition());
+	}
 
 	std::list<AbstractVehicle*>::const_iterator Connection::findVehicleBehind(double arcPosition) const
 	{

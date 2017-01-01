@@ -1,18 +1,31 @@
 #include <gui/networkrenderwidget.h>
 
+#include <cts-core/base/algorithmicgeometry.h>
+#include <cts-core/base/bounds.h>
+#include <cts-core/network/bezierparameterization.h>
 #include <cts-core/network/connection.h>
 #include <cts-core/network/network.h>
 #include <cts-core/network/node.h>
 #include <cts-core/network/routing.h>
 #include <cts-core/traffic/vehicle.h>
 
+#include <cmath>
 #include <vector>
+
 #include <QtGui/QPainter>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
 
 namespace cts { namespace gui
 {
+	namespace
+	{
+		QPointF toQt(const vec2& v)
+		{
+			return QPointF(v[0], v[1]);
+		}
+	}
+
 
 	NetworkRenderWidget::NetworkRenderWidget(QWidget* parent)
 		: QWidget(parent)
@@ -25,7 +38,7 @@ namespace cts { namespace gui
 		, m_interactionmode(InteractionMode::None)
 		, m_mouseDownPosition(0.0, 0.0)
 	{
-
+		setFocusPolicy(Qt::StrongFocus);
 	}
 
 
@@ -58,12 +71,66 @@ namespace cts { namespace gui
 
 	void NetworkRenderWidget::mouseMoveEvent(QMouseEvent* e)
 	{
-		if (m_interactionmode == InteractionMode::MoveCanvas)
+		m_mousePosition = windowToWorld(e->pos());
+		const auto offset = m_mousePosition - m_mouseDownPosition;
+
+		switch (m_interactionmode)
 		{
-			m_zoomOffset = m_mouseDownZoomOffset + (vec2(e->pos().x(), e->pos().y()) - m_mouseDownPosition);
-			e->accept();
-			update();
+		case InteractionMode::None:
+			return;
+		case InteractionMode::MoveCanvas:
+			m_zoomOffset = offset;
+			break;
+		case InteractionMode::MoveNode:
+			for (auto& ns : m_selectedNodes)
+			{
+				ns.node->setPosition(ns.originalPosition + offset);
+			}
+			break;
+		case InteractionMode::MoveInSlope:
+			for (auto& ns : m_selectedNodes)
+			{
+				ns.node->setInSlope(ns.originalPosition - offset);
+				if ((e->modifiers() & Qt::AltModifier) == 0)
+					ns.node->setOutSlope(ns.originalPosition - offset);
+			}
+			break;
+		case InteractionMode::MoveOutSlope:
+			for (auto& ns : m_selectedNodes)
+			{
+				ns.node->setOutSlope(ns.originalPosition + offset);
+				if ((e->modifiers() & Qt::AltModifier) == 0)
+					ns.node->setInSlope(ns.originalPosition + offset);
+			}
+			break;
+		case InteractionMode::CreateNode:
+		{
+			core::Node* base = m_selectedNodes[0].node;
+			base->setOutSlope(m_mousePosition - base->getPosition());
+			base->setInSlope(base->getOutSlope());
+
+			for (size_t i = 1; i < m_selectedNodes.size(); ++i)
+			{
+				core::Node* cur = m_selectedNodes[i].node;
+
+				double rotation = std::atan2(m_selectedNodes[0].originalPosition[1], m_selectedNodes[0].originalPosition[0]) - std::atan2(m_selectedNodes[i].originalPosition[1], m_selectedNodes[i].originalPosition[0]);
+				cur->setPosition(base->getPosition() - (math::rotated(base->getOutSlope(), rotation).normalized() * m_selectedNodes[i].originalPosition.norm()));
+
+				double baseDistance = math::distance(base->getPosition(), base->getIncomingConnections().front()->getStartNode().getPosition());
+				double curDistance = math::distance(cur->getPosition(), cur->getIncomingConnections().front()->getStartNode().getPosition());
+				double stretch = std::pow(curDistance / baseDistance, 2.0);
+				cur->setInSlope(base->getInSlope() * stretch);
+				cur->setOutSlope(base->getOutSlope() * stretch);
+			}
+			break;
 		}
+		case InteractionMode::DragRubberband:
+			// nothing to do here
+			break;
+		}
+
+		e->accept();
+		update();
 	}
 
 
@@ -72,34 +139,129 @@ namespace cts { namespace gui
 		if (m_interactionmode != InteractionMode::None)
 			return;
 
+		m_mouseDownPosition = windowToWorld(e->pos());
+		m_mousePosition = m_mouseDownPosition;
 		if (e->button() == Qt::LeftButton)
 		{
-			vec2 worldCoords = windowToWorld(e->pos());
-			for (auto& node : m_network->getNodes())
+			// Select nodes/slope manipulators or start drawing a rubber band for selection.
+			if (e->modifiers() == Qt::NoModifier)
 			{
-				if (math::distance(worldCoords, node->getPosition()) < 8)
+				// check whether we clicked on one of the selected nodes
+				for (auto it = m_selectedNodes.begin(); it != m_selectedNodes.end(); ++it)
 				{
-					if (e->modifiers() == Qt::CTRL)
-						m_selectedEndNode = node.get();
-					else
-						m_selectedStartNode = node.get();
-
-					if (m_selectedStartNode && m_selectedEndNode)
+					// check whether we clicked on the out slope manipulator
+					if ((m_mouseDownPosition - it->node->getPosition() - it->node->getOutSlope()).cwiseAbs().maxCoeff() < 8)
 					{
-						m_routing = std::make_unique<core::Routing>(*m_selectedStartNode, *m_selectedEndNode, core::TypedVehicle<core::IdmMobil>());
+						std::swap(*it, *m_selectedNodes.begin());
+						for (auto& ns : m_selectedNodes)
+						{
+							ns.originalPosition = ns.node->getOutSlope();
+						}
+						m_interactionmode = InteractionMode::MoveOutSlope;
+						break;
 					}
 
-					e->accept();
-					update();
+					
+					// check whether we clicked on the in slope manipulator
+					if ((m_mouseDownPosition - it->node->getPosition() + it->node->getInSlope()).cwiseAbs().maxCoeff() < 8)
+					{
+						std::swap(*it, *m_selectedNodes.begin());
+						for (auto& ns : m_selectedNodes)
+						{
+							ns.originalPosition = ns.node->getInSlope();
+						}
+						m_interactionmode = InteractionMode::MoveInSlope;
+						break;
+					}
+
+
+					// check whether we clicked on the node
+					if ((m_mouseDownPosition - it->node->getPosition()).cwiseAbs().maxCoeff() < 8)
+					{
+						std::swap(*it, *m_selectedNodes.begin());
+						for (auto& ns : m_selectedNodes)
+						{
+							ns.originalPosition = ns.node->getPosition();
+						}
+						m_interactionmode = InteractionMode::MoveNode;
+						break;
+					}
+				}
+
+				if (m_interactionmode == InteractionMode::None)
+				{
+					for (auto& node : m_network->getNodes())
+					{
+						if ((m_mouseDownPosition - node->getPosition()).cwiseAbs().maxCoeff() < 8)
+						{
+							m_selectedNodes = { { node.get(), m_mouseDownPosition } };
+							m_interactionmode = InteractionMode::MoveNode;
+						}
+					}
+				}
+
+				if (m_interactionmode == InteractionMode::None)
+					m_interactionmode = InteractionMode::DragRubberband;
+			}
+
+			// Connect nodes
+			else if (e->modifiers() == Qt::AltModifier)
+			{
+				if (!m_selectedNodes.empty())
+				{
+					for (auto& node : m_network->getNodes())
+					{
+						if ((m_mouseDownPosition - node->getPosition()).cwiseAbs().maxCoeff() < 8)
+						{
+							for (auto& ns : m_selectedNodes)
+							{
+								if (ns.node->getConnectionTo(*node) == nullptr)
+								{
+									auto connection = m_network->addConnection(*ns.node, *node);
+									connection->setPriority(5);
+								}
+							}
+						}
+					}
+
 				}
 			}
 
+			// Add new nodes and connect them to the current selection.
+			else if (e->modifiers() == Qt::ControlModifier)
+			{
+				if (m_selectedNodes.empty())
+				{
+					auto newNode = m_network->addNode(m_mouseDownPosition);
+					m_selectedNodes = { { newNode, vec2(0.0, 0.0) } };
+				}
+				else
+				{
+					std::vector<NodeSelection> newNodes;
+					for (size_t i = 0; i < m_selectedNodes.size(); ++i)
+					{
+						const auto offset = m_selectedNodes[i].node->getPosition() - m_selectedNodes[0].node->getPosition();
+						core::Node* newNode = m_network->addNode(m_mouseDownPosition + offset);
+						newNode->setOutSlope((newNode->getPosition() - m_selectedNodes[i].node->getPosition()).normalized() * 30.0);
+						newNode->setInSlope(newNode->getOutSlope() * -1.0);
+
+						auto connection = m_network->addConnection(*m_selectedNodes[i].node, *newNode);
+						connection->setPriority(5);
+						newNodes.push_back({ newNode, offset });
+					}
+					m_selectedNodes = newNodes;
+				}
+				m_interactionmode = InteractionMode::CreateNode;
+			}
+
+			e->accept();
+			update();
 		}
+
+		// move canvas
 		else if (e->button() == Qt::RightButton)
 		{
 			m_interactionmode = InteractionMode::MoveCanvas;
-			m_mouseDownPosition = vec2(e->pos().x(), e->pos().y());
-			m_mouseDownZoomOffset = m_zoomOffset;
 			e->accept();
 		}
 	}
@@ -109,8 +271,19 @@ namespace cts { namespace gui
 	{
 		if (m_interactionmode != InteractionMode::None)
 		{
+			if (m_interactionmode == InteractionMode::DragRubberband)
+			{
+				m_selectedNodes.clear();
+				const core::Bounds2 bounds{ m_mouseDownPosition, m_mousePosition };
+				for (auto& node : m_network->getNodes(bounds))
+				{
+					m_selectedNodes.push_back({ node, node->getPosition() });
+				}
+			}
+
 			m_interactionmode = InteractionMode::None;
 			e->accept();
+			update();
 		}
 	}
 
@@ -129,6 +302,21 @@ namespace cts { namespace gui
 
 			e->accept();
 			update();
+		}
+	}
+
+
+	void NetworkRenderWidget::keyPressEvent(QKeyEvent* e)
+	{
+		switch (e->key())
+		{
+		case Qt::Key_Delete:
+			for (auto& ns : m_selectedNodes)
+			{
+				m_network->removeNode(*ns.node);
+			}
+			m_selectedNodes.clear();
+			break;
 		}
 	}
 
@@ -156,6 +344,16 @@ namespace cts { namespace gui
 			p.drawPath(path);
 		}
 
+
+		// draw nodes
+		p.setPen(Qt::NoPen);
+		p.setBrush(QBrush(QColor::fromRgbF(0, 0, 0, 0.5)));
+		for (auto& node : m_network->getNodes())
+		{
+			p.drawRect(node->getPosition().x() - 4, node->getPosition().y() - 4, 8, 8);
+		}
+
+
 		// draw focus nodes
 		if (m_selectedStartNode)
 		{
@@ -166,6 +364,35 @@ namespace cts { namespace gui
 		{
 			p.setPen(QPen(QBrush(QColor::fromRgbF(0.5, 0.0, 0.0)), 3));
 			p.drawEllipse(m_selectedEndNode->getPosition().x() - 8, m_selectedEndNode->getPosition().y() - 8, 16, 16);
+		}
+
+		if (!m_selectedNodes.empty())
+		{
+			// draw in/out slope manipulators 
+			p.setPen(Qt::black);
+			p.setBrush(Qt::NoBrush);
+			for (auto& sn : m_selectedNodes)
+			{
+				const core::Node& node = *sn.node;
+				QPointF inPos = toQt(node.getPosition() - node.getInSlope());
+				QPointF outPos = toQt(node.getPosition() + node.getOutSlope());
+				p.drawLine(toQt(node.getPosition()), inPos);
+				p.drawLine(toQt(node.getPosition()), outPos);
+				p.drawEllipse(inPos, 8, 8);
+				p.drawRect(outPos.x() - 8, outPos.y() - 8, 16, 16);
+			}
+
+			std::vector<vec2> points;
+			points.reserve(m_selectedNodes.size());
+			for (auto& sn : m_selectedNodes)
+			{
+				points.push_back(sn.node->getPosition());
+			}
+
+			QPainterPath path = roundedConvexHullPath(points, 16);
+			p.setPen(QColor::fromRgbF(1.0, 0.75, 0.0));
+			p.setBrush(QBrush(QColor::fromRgbF(1.0, 0.75, 0.0, 0.2)));
+			p.drawPath(path);
 		}
 
 		if (m_routing)
@@ -185,19 +412,6 @@ namespace cts { namespace gui
 			}
 		}
 
-		// draw nodes
-		p.setPen(Qt::NoPen);
-		p.setBrush(Qt::black);
-		for (auto& node : m_network->getNodes())
-		{
-			p.drawRect(node->getPosition().x() - 4, node->getPosition().y() - 4, 8, 8);
-		}
-
-		auto toQt = [](const vec2& v)
-		{
-			return QPointF(v[0], v[1]);
-		};
-
 		// draw Intersections
 		p.setPen(Qt::darkMagenta);
 		p.setBrush(Qt::NoBrush);
@@ -216,8 +430,61 @@ namespace cts { namespace gui
 
 			p.drawPolyline(surroundingPoints, 5);
 		}
+
+		// draw rubberband
+		if (m_interactionmode == InteractionMode::DragRubberband)
+		{
+			p.setPen(Qt::darkGray);
+			p.setBrush(QBrush(QColor::fromRgbF(0.0, 0.0, 0.0, 0.2)));
+			p.drawRect(m_mouseDownPosition[0], m_mouseDownPosition[1], m_mousePosition[0] - m_mouseDownPosition[0], m_mousePosition[1] - m_mouseDownPosition[1]);
+		}
 	}
 
+
+	QPainterPath NetworkRenderWidget::roundedConvexHullPath(const std::vector<vec2>& points, double radius) const
+	{
+		QPainterPath toReturn;
+		std::vector<vec2> hull = math::convexHull(points);
+		if (hull.size() == 0)
+		{
+			return toReturn;
+		}
+		else if (hull.size() == 1)
+		{
+			toReturn.addEllipse(hull.front()[0] - radius, hull.front()[1] - radius, 2.0 * radius, 2.0 * radius);
+			return toReturn;
+		}
+
+		// add the first two points of the hull again to facilitate building the path
+		hull.push_back(hull[0]);
+		hull.push_back(hull[1]);
+
+		for (size_t i = 0; i < hull.size() - 2; ++i)
+		{
+			const vec2& cur = hull[i];
+			const vec2& next = hull[i + 1];
+			const vec2& nextNext = hull[i + 2];
+
+			// compute orthogonal vectors to point-to-point directions
+			const vec2 ortho = math::rotatedClockwise(next - cur).normalized() * radius;
+			const vec2 nextOrtho = math::rotatedClockwise(nextNext - next).normalized() * radius;
+
+			// compute angles for the rounded corners
+			const double start = -std::atan2(ortho[1], ortho[0]) * 180 / math::PI;
+			const double end = -std::atan2(nextOrtho[1], nextOrtho[0]) * 180 / math::PI;
+			double angle = end - start;
+			if (angle > 0)
+				angle -= 360.0;
+
+			// Add the path segments
+			if (i == 0)
+				toReturn.moveTo(cur[0] + ortho[0], cur[1] + ortho[1]);
+			toReturn.lineTo(next[0] + ortho[0], next[1] + ortho[1]);
+			toReturn.arcTo(next[0] - radius, next[1] - radius, 2.0 * radius, 2.0 * radius, start, angle);
+		}
+
+		return toReturn;
+	}
 
 }
 }

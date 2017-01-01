@@ -5,6 +5,7 @@
 #include <cts-core/base/math.h>
 
 #include <array>
+#include <initializer_list>
 #include <limits>
 
 namespace cts { namespace core
@@ -34,6 +35,15 @@ namespace cts { namespace core
 			for (size_t i = 0; i < K; ++i)
 			{
 				addPoint(points[i]);
+			}
+		}
+
+		Bounds(std::initializer_list<VectorType> ilist)
+			: Bounds()
+		{
+			for (auto it = ilist.begin(); it != ilist.end(); ++it)
+			{
+				addPoint(*it);
 			}
 		}
 

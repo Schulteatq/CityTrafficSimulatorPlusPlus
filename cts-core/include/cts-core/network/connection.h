@@ -10,8 +10,9 @@
 
 namespace cts { namespace core
 {
-	class Node;
 	class AbstractVehicle;
+	class Network;
+	class Node;
 
 	/**
 	 * A connection between two nodes.
@@ -19,6 +20,8 @@ namespace cts { namespace core
 	 */
 	class CTS_CORE_API Connection
 	{
+		friend class Network;
+
 	public:
 		/// Creates a new network connection with the given parameters.
 		/// The Bézier support points are taken from the start and end nodes.
@@ -44,6 +47,10 @@ namespace cts { namespace core
 		double getTargetVelocity() const;
 		/// Sets the target velocity of this Connection in m/s.
 		void setTargetVelocity(double value);
+
+
+		/// Recalculates the Bézier parameterization curve based on the node's properties.
+		void updateCurve();
 
 	private:
 		std::list<AbstractVehicle*>::const_iterator findVehicleBehind(double arcPosition) const;

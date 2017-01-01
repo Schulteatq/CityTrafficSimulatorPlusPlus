@@ -32,6 +32,9 @@ namespace cts { namespace core
 		BezierParameterization(const vec2& p0, const vec2& p1, const vec2& p2, const vec2& p3);
 
 
+		BezierParameterization(const BezierParameterization& rhs);
+		BezierParameterization& operator=(BezierParameterization rhs);
+
 		/// Returns the array of Bézier support points.
 		const std::array<vec2, 4>& getSupportPoints() const;
 

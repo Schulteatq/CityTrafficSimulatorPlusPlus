@@ -6,17 +6,18 @@
 
 int main(int argc, char** argv)
 {
-    cts::core::Network network;
-    network.importLegacyXml("minimal.xml");
-    //network.importLegacyXml("network.xml");
+	cts::core::Network network;
+	network.importLegacyXml("minimal.xml");
+	//network.importLegacyXml("network.xml");
 
-    QApplication app(argc, argv);
-    QMainWindow mw;
+	QApplication app(argc, argv);
+	QMainWindow mw;
 
-    cts::gui::NetworkRenderWidget renderWidget(nullptr);
-    renderWidget.setNetwork(&network);
-    mw.setCentralWidget(&renderWidget);
-    mw.show();
+	cts::gui::NetworkRenderWidget renderWidget(nullptr);
+	renderWidget.setNetwork(&network);
+	renderWidget.setMinimumSize(800, 600);
+	mw.setCentralWidget(&renderWidget);
+	mw.show();
 
-    return app.exec();
+	return app.exec();
 }

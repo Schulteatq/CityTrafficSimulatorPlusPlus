@@ -33,11 +33,22 @@ namespace cts { namespace core
 		void importLegacyXml(const std::string& filename);
 
 		Node* addNode(const vec2& position);
+		void removeNode(Node& node);
 
+
+		/// Creates a new Connection from \e startNode to \e endNode.
+		/// Returns a nullptr if such a connection already exists.
+		/// \param  startNode	Network node to connect from.
+		/// \param  endNode		Network node to connect to.
 		Connection* addConnection(Node& startNode, Node& endNode);
 
+		/// Removes the given connection from the network.
+		/// \param  connection	Connection to remove.
+		void removeConnection(Connection& connection);
 
 		const NodeListType& getNodes() const;
+		std::vector<Node*> getNodes(const Bounds2& bounds) const;
+		
 		const ConnectionListType& getConnections() const;
 		const VehicleListType& getVehicles() const;
 		const IntersectionListType& getIntersections() const;

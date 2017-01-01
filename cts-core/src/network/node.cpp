@@ -16,15 +16,9 @@ namespace cts { namespace core
 	}
 
 
-	std::unique_ptr<Connection> Node::connectTo(Node& targetNode)
+	void Node::disconnect(Connection& connection)
 	{
-		if (getConnectionTo(targetNode) != nullptr)
-			return nullptr;
 
-		auto connection = std::make_unique<Connection>(*this, targetNode);
-		m_outgoingConnections.push_back(connection.get());
-		targetNode.m_incomingConnections.push_back(connection.get());
-		return connection;
 	}
 
 
@@ -37,6 +31,14 @@ namespace cts { namespace core
 	void Node::setPosition(const vec2& value)
 	{
 		m_position = value;
+		for (auto& connection : m_incomingConnections)
+		{
+			connection->updateCurve();
+		}
+		for (auto& connection : m_outgoingConnections)
+		{
+			connection->updateCurve();
+		}
 	}
 
 
@@ -49,6 +51,10 @@ namespace cts { namespace core
 	void Node::setInSlope(const vec2& value)
 	{
 		m_inSlope = value;
+		for (auto& connection : m_incomingConnections)
+		{
+			connection->updateCurve();
+		}
 	}
 
 
@@ -61,6 +67,10 @@ namespace cts { namespace core
 	void Node::setOutSlope(const vec2& value)
 	{
 		m_outSlope = value;
+		for (auto& connection : m_outgoingConnections)
+		{
+			connection->updateCurve();
+		}
 	}
 
 

@@ -16,6 +16,24 @@ namespace core
 	}
 
 
+	BezierParameterization::BezierParameterization(const BezierParameterization& rhs)
+		: m_supportPoints(rhs.m_supportPoints)
+		, m_bounds(rhs.m_bounds)
+		, m_lengthApproximationTable(rhs.m_lengthApproximationTable)
+	{
+
+	}
+
+	BezierParameterization& BezierParameterization::operator=(BezierParameterization rhs)
+	{
+		std::swap(m_supportPoints, rhs.m_supportPoints);
+		std::swap(m_bounds, rhs.m_bounds);
+		std::swap(m_lengthApproximationTable, rhs.m_lengthApproximationTable);
+		std::swap(m_subdividedFirst, rhs.m_subdividedFirst);
+		std::swap(m_subdividedSecond, rhs.m_subdividedSecond);
+		return *this;
+	}
+
 	const std::array<vec2, 4>& BezierParameterization::getSupportPoints() const
 	{
 		return m_supportPoints;

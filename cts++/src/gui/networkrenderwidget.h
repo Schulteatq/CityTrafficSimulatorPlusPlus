@@ -35,9 +35,21 @@ namespace gui
 	protected:
 		enum class InteractionMode
 		{
-			None,
-			MoveCanvas
+			None,				///< No interaction.
+			MoveCanvas,			///< Moving the canvas (i.e. panning the view).
+			MoveNode,			///< Moving one or multiple nodes.
+			MoveInSlope,		///< Move the incoming slope of one or multiple nodes.
+			MoveOutSlope,		///< Move the outgoing slope of one or multiple nodes.
+			CreateNode,			///< Interaction directly after adding one or multiple nodes (combined move node and move out slope).
+			DragRubberband		///< Drag a rubber band to perform node selection on release.
 		};
+
+		struct NodeSelection
+		{
+			core::Node* node;
+			vec2 originalPosition;
+		};
+
 
 		vec2 windowToWorld(const QPoint& pt) const;
 
@@ -46,9 +58,12 @@ namespace gui
 		virtual void mouseReleaseEvent(QMouseEvent* e) override;
 		virtual void wheelEvent(QWheelEvent* e) override;
 
+		virtual void keyPressEvent(QKeyEvent* e) override;
+
 		virtual void paintEvent(QPaintEvent* e) override;
 
 
+		QPainterPath roundedConvexHullPath(const std::vector<vec2>& points, double radius) const;
 
 		core::Network* m_network;
 
@@ -61,7 +76,8 @@ namespace gui
 
 		InteractionMode m_interactionmode;
 		vec2 m_mouseDownPosition;
-		vec2 m_mouseDownZoomOffset;
+		vec2 m_mousePosition;
+		std::vector<NodeSelection> m_selectedNodes;
 	};
 
 }

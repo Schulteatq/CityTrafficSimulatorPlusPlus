@@ -14,14 +14,14 @@ namespace cts { namespace core
 
 	class CTS_CORE_API Node
 	{
+		friend class Network;
+
 	public:
 		Node(const vec2& position);
 
-
-		/// Creates a new Connection from this node to the target node.
-		/// Returns a nullptr if such a connection already exists.
-		/// \param  targetNode	Network node to connect to.
-		std::unique_ptr<Connection> connectTo(Node& targetNode);
+		/// Removes the given connection from the incoming/outgoing list of connections.
+		/// Also updates the other participating node of the given connection.
+		void disconnect(Connection& connection);
 
 
 		/// Returns the world position of this node.

@@ -1,4 +1,5 @@
 #include <cts-core/network/network.h>
+#include <cts-core/base/utils.h>
 
 #include <tinyxml2.h>
 
@@ -88,14 +89,39 @@ namespace cts { namespace core
 	}
 
 
+	void Network::removeNode(Node& node)
+	{
+		while (!node.getIncomingConnections().empty())
+		{
+			removeConnection(*node.getIncomingConnections().front());
+		}
+		while (!node.getOutgoingConnections().empty())
+		{
+			removeConnection(*node.getOutgoingConnections().front());
+		}
+
+		utils::remove_erase_if(m_nodes, [&node](const std::unique_ptr<Node>& n) { return n.get() == &node; });
+	}
+
+
 	Connection* Network::addConnection(Node& startNode, Node& endNode)
 	{
-		auto connection = startNode.connectTo(endNode);
-		if (connection == nullptr)
+		if (startNode.getConnectionTo(endNode) != nullptr)
 			return nullptr;
 
+		auto connection = std::make_unique<Connection>(startNode, endNode);
+		startNode.m_outgoingConnections.push_back(connection.get());
+		endNode.m_incomingConnections.push_back(connection.get());
 		m_connections.push_back(std::move(connection));
 		return m_connections.back().get();
+	}
+
+
+	void Network::removeConnection(Connection& connection)
+	{
+		utils::remove_erase(const_cast<Node&>(connection.m_startNode).m_outgoingConnections, &connection);
+		utils::remove_erase(const_cast<Node&>(connection.m_endNode).m_incomingConnections, &connection);
+		utils::remove_erase_if(m_connections, [connection](const std::unique_ptr<Connection>& ptr) { return &connection == ptr.get(); });
 	}
 
 
@@ -104,6 +130,17 @@ namespace cts { namespace core
 		return m_nodes;
 	}
 
+
+	std::vector<Node*> Network::getNodes(const Bounds2& bounds) const
+	{
+		std::vector<Node*> toReturn;
+		for (auto& node : m_nodes)
+		{
+			if (bounds.contains(node->getPosition()))
+				toReturn.push_back(node.get());
+		}
+		return toReturn;
+	}
 
 	const std::vector< std::unique_ptr<Connection> >& Network::getConnections() const
 	{

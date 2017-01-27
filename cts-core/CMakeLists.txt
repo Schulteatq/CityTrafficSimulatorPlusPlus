@@ -41,6 +41,11 @@ target_compile_features(cts-core
 # Depend on a library that we defined in the top-level file
 target_link_libraries(cts-core tinyxml2)
 
+
+DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsCoreSources ${CtsHome}/cts-core "src")
+DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsCoreHeaders ${CtsHome}/cts-core "include/cts-core")
+
+
 # 'make install' to the correct location
 install(TARGETS cts-core EXPORT CtsCoreConfig
     ARCHIVE  DESTINATION lib

@@ -16,3 +16,6 @@ include_directories(${CtsGlobalIncludeDirs})
 
 # Define the libraries this project depends upon
 target_link_libraries(CityTrafficSimulator++ cts-core Qt5::Widgets)
+
+DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsApplicationSources ${CtsHome}/cts++ "src")
+DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsApplicationHeaders ${CtsHome}/cts++ "src")

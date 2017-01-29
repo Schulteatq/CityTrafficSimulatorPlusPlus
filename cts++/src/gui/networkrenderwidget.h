@@ -67,8 +67,8 @@ namespace gui
 
 		core::Network* m_network;
 
-		core::Node* m_selectedStartNode;
-		core::Node* m_selectedEndNode;
+		std::vector<core::Node*> m_selectedStartNodes;
+		std::vector<core::Node*> m_selectedEndNodes;
 		std::unique_ptr<core::Routing> m_routing;
 
 		double m_zoomFactor;

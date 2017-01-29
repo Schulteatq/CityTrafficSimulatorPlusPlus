@@ -5,6 +5,7 @@
 #include <cts-core/network/connection.h>
 #include <cts-core/network/intersection.h>
 #include <cts-core/network/node.h>
+#include <cts-core/traffic/trafficmanager.h>
 #include <cts-core/traffic/vehicle.h>
 
 #include <memory>
@@ -46,6 +47,8 @@ namespace cts { namespace core
 		/// \param  connection	Connection to remove.
 		void removeConnection(Connection& connection);
 
+
+		TrafficManager& getTrafficManager();
 		const NodeListType& getNodes() const;
 		std::vector<Node*> getNodes(const Bounds2& bounds) const;
 		
@@ -55,6 +58,8 @@ namespace cts { namespace core
 
 	private:
 		std::vector<Intersection> computeIntersections(Connection& connection, ConnectionListType::iterator start, ConnectionListType::iterator end, double tolerance);
+
+		TrafficManager m_trafficMgr;
 
 		NodeListType m_nodes;
 		ConnectionListType m_connections;

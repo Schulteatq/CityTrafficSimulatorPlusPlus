@@ -16,6 +16,12 @@ namespace cts { namespace core
 	}
 
 
+	Node::~Node()
+	{
+		s_deleted.emitSignal(this);
+	}
+
+
 	void Node::disconnect(Connection& connection)
 	{
 

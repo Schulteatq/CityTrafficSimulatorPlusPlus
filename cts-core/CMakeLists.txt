@@ -5,6 +5,7 @@ file(GLOB CtsCoreSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     src/*.cpp
     src/base/*.cpp
     src/network/*.cpp
+    src/simulation/*.cpp
     src/traffic/*.cpp
 )
 
@@ -12,6 +13,7 @@ file(GLOB CtsCoreHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     include/cts-core/*.h
     include/cts-core/base/*.h
     include/cts-core/network/*.h
+    include/cts-core/simulation/*.h
     include/cts-core/traffic/*.h
 )
 

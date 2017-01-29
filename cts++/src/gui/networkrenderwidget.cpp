@@ -30,9 +30,7 @@ namespace cts { namespace gui
 	NetworkRenderWidget::NetworkRenderWidget(QWidget* parent)
 		: QWidget(parent)
 		, m_network(nullptr)
-		, m_selectedStartNode(nullptr)
-		, m_selectedEndNode(nullptr)
-		, m_routing(nullptr)
+		, m_routing(new core::Routing())
 		, m_zoomFactor(1.0)
 		, m_zoomOffset(0.0, 0.0)
 		, m_interactionmode(InteractionMode::None)
@@ -317,6 +315,20 @@ namespace cts { namespace gui
 			}
 			m_selectedNodes.clear();
 			break;
+		case Qt::Key_F:
+			m_selectedStartNodes.clear();
+			for (auto& ns : m_selectedNodes)
+			{
+				m_selectedStartNodes.push_back(ns.node);
+			}
+			break;
+		case Qt::Key_T:
+			m_selectedEndNodes.clear();
+			for (auto& ns : m_selectedNodes)
+			{
+				m_selectedEndNodes.push_back(ns.node);
+			}
+			break;
 		}
 	}
 
@@ -355,15 +367,15 @@ namespace cts { namespace gui
 
 
 		// draw focus nodes
-		if (m_selectedStartNode)
+		for (auto node : m_selectedStartNodes)
 		{
 			p.setPen(QPen(QBrush(QColor::fromRgbF(0.0, 0.5, 0.0)), 3));
-			p.drawEllipse(m_selectedStartNode->getPosition().x() - 8, m_selectedStartNode->getPosition().y() - 8, 16, 16);
+			p.drawEllipse(node->getPosition().x() - 8, node->getPosition().y() - 8, 16, 16);
 		}
-		if (m_selectedEndNode)
+		for (auto node : m_selectedEndNodes)
 		{
 			p.setPen(QPen(QBrush(QColor::fromRgbF(0.5, 0.0, 0.0)), 3));
-			p.drawEllipse(m_selectedEndNode->getPosition().x() - 8, m_selectedEndNode->getPosition().y() - 8, 16, 16);
+			p.drawEllipse(node->getPosition().x() - 8, node->getPosition().y() - 8, 16, 16);
 		}
 
 		if (!m_selectedNodes.empty())
@@ -400,7 +412,7 @@ namespace cts { namespace gui
 			p.setPen(QPen(QBrush(QColor::fromRgbF(1.0, 0.5, 0.0)), 10));
 			for (auto& segment : m_routing->getSegments())
 			{
-				auto connection = segment.startNode->getConnectionTo(*segment.targetNode);
+				auto connection = segment.start->getConnectionTo(*segment.destination);
 				QPainterPath path(QPointF(connection->getCurve().getSupportPoints()[0].x(), connection->getCurve().getSupportPoints()[0].y()));
 				path.cubicTo(
 					connection->getCurve().getSupportPoints()[1].x(), connection->getCurve().getSupportPoints()[1].y(),

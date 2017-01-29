@@ -21,6 +21,7 @@ namespace cts { namespace core
 
 	void Network::importLegacyXml(const std::string& filename)
 	{
+		// FIXME: this code lacks error checking at an insane level...
 		tinyxml2::XMLDocument doc;
 		doc.LoadFile(filename.c_str());
 
@@ -38,13 +39,13 @@ namespace cts { namespace core
 		std::map<int, Node*> nodeHashes;
 		for (tinyxml2::XMLElement* nodeElement = layoutNode->FirstChildElement("LineNode"); nodeElement != nullptr; nodeElement = nodeElement->NextSiblingElement("LineNode"))
 		{
-			int hashCode = std::atoi(nodeElement->FirstChildElement("hashcode")->GetText());
-			double posX = std::atof(nodeElement->FirstChildElement("position")->FirstChildElement("X")->GetText());
-			double posY = std::atof(nodeElement->FirstChildElement("position")->FirstChildElement("Y")->GetText());
-			double inSlopeX = std::atof(nodeElement->FirstChildElement("inSlope")->FirstChildElement("X")->GetText());
-			double inSlopeY = std::atof(nodeElement->FirstChildElement("inSlope")->FirstChildElement("Y")->GetText());
-			double outSlopeX = std::atof(nodeElement->FirstChildElement("outSlope")->FirstChildElement("X")->GetText());
-			double outSlopeY = std::atof(nodeElement->FirstChildElement("outSlope")->FirstChildElement("Y")->GetText());
+			const int hashCode = std::atoi(nodeElement->FirstChildElement("hashcode")->GetText());
+			const double posX = std::atof(nodeElement->FirstChildElement("position")->FirstChildElement("X")->GetText());
+			const double posY = std::atof(nodeElement->FirstChildElement("position")->FirstChildElement("Y")->GetText());
+			const double inSlopeX = -std::atof(nodeElement->FirstChildElement("inSlope")->FirstChildElement("X")->GetText());
+			const double inSlopeY = -std::atof(nodeElement->FirstChildElement("inSlope")->FirstChildElement("Y")->GetText());
+			const double outSlopeX = std::atof(nodeElement->FirstChildElement("outSlope")->FirstChildElement("X")->GetText());
+			const double outSlopeY = std::atof(nodeElement->FirstChildElement("outSlope")->FirstChildElement("Y")->GetText());
 
 			Node* theNewNode = addNode(vec2(posX, posY));
 			theNewNode->setInSlope(vec2(inSlopeX, inSlopeY));
@@ -55,10 +56,10 @@ namespace cts { namespace core
 
 		for (tinyxml2::XMLElement* connectionElement = layoutNode->FirstChildElement("NodeConnection"); connectionElement != nullptr; connectionElement = connectionElement->NextSiblingElement("NodeConnection"))
 		{
-			int startHash = std::atoi(connectionElement->FirstChildElement("startNodeHash")->GetText());
-			int endHash = std::atoi(connectionElement->FirstChildElement("endNodeHash")->GetText());
-			int priority = std::atoi(connectionElement->FirstChildElement("priority")->GetText());
-			double velocity = std::atof(connectionElement->FirstChildElement("targetVelocity")->GetText());
+			const int startHash = std::atoi(connectionElement->FirstChildElement("startNodeHash")->GetText());
+			const int endHash = std::atoi(connectionElement->FirstChildElement("endNodeHash")->GetText());
+			const int priority = std::atoi(connectionElement->FirstChildElement("priority")->GetText());
+			const double velocity = std::atof(connectionElement->FirstChildElement("targetVelocity")->GetText());
 
 			auto startIt = nodeHashes.find(startHash);
 			auto endIt = nodeHashes.find(endHash);
@@ -74,10 +75,58 @@ namespace cts { namespace core
 		}
 
 
-		for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
+		//for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
+		//{
+		//	auto ints = computeIntersections(**it, it, m_connections.end(), 1);
+		//	m_intersections.insert(m_intersections.end(), ints.begin(), ints.end());
+		//}
+
+
+		auto tvNode = rootNode->FirstChildElement("TrafficVolumes");
+		if (tvNode)
 		{
-			auto ints = computeIntersections(**it, it, m_connections.end(), 1);
-			m_intersections.insert(m_intersections.end(), ints.begin(), ints.end());
+			auto startNode = tvNode->FirstChildElement("StartPoints");
+			auto endNode = tvNode->FirstChildElement("DestinationPoints");
+			std::map<int, Location> startMap, destinationMap;
+
+			for (tinyxml2::XMLElement* bonElement = startNode->FirstChildElement("BunchOfNodes"); bonElement != nullptr; bonElement = bonElement->NextSiblingElement("BunchOfNodes"))
+			{
+				const int hash = std::atoi(bonElement->FirstChildElement("hashcode")->GetText());
+				const std::string title = bonElement->FirstChildElement("title")->GetText();
+				std::vector<Node*> nodes;
+				auto nhNode = bonElement->FirstChildElement("nodeHashes");
+				for (tinyxml2::XMLElement* e = nhNode->FirstChildElement("int"); e != nullptr; e = e->NextSiblingElement("int"))
+				{
+					nodes.push_back(nodeHashes[std::atoi(e->GetText())]);
+				}
+
+				startMap.emplace(hash, Location(nodes, title));
+			}
+
+			for (tinyxml2::XMLElement* bonElement = endNode->FirstChildElement("BunchOfNodes"); bonElement != nullptr; bonElement = bonElement->NextSiblingElement("BunchOfNodes"))
+			{
+				const int hash = std::atoi(bonElement->FirstChildElement("hashcode")->GetText());
+				const std::string title = bonElement->FirstChildElement("title")->GetText();
+				std::vector<Node*> nodes;
+				auto nhNode = bonElement->FirstChildElement("nodeHashes");
+				for (tinyxml2::XMLElement* e = nhNode->FirstChildElement("int"); e != nullptr; e = e->NextSiblingElement("int"))
+				{
+					nodes.push_back(nodeHashes[std::atoi(e->GetText())]);
+				}
+
+				destinationMap.emplace(hash, Location(nodes, title));
+			}
+
+			for (tinyxml2::XMLElement* tvElement = tvNode->FirstChildElement("TrafficVolume"); tvElement != nullptr; tvElement = tvElement->NextSiblingElement("TrafficVolume"))
+			{
+				const int startHash = std::atoi(tvElement->FirstChildElement("startHash")->GetText());
+				const int destinationHash = std::atoi(tvElement->FirstChildElement("destinationHash")->GetText());
+				const int numCars = std::atoi(tvElement->FirstChildElement("trafficVolumeCars")->GetText());
+
+				auto volume = m_trafficMgr.addVolume(startMap.find(startHash)->second.getNodes(), destinationMap.find(destinationHash)->second.getNodes());
+				volume->carsPerHour = numCars;
+			}
+			int i = 0;
 		}
 	}
 
@@ -100,7 +149,7 @@ namespace cts { namespace core
 			removeConnection(*node.getOutgoingConnections().front());
 		}
 
-		utils::remove_erase_if(m_nodes, [&node](const std::unique_ptr<Node>& n) { return n.get() == &node; });
+		utils::remove_erase_unique_ptr(m_nodes, &node);
 	}
 
 
@@ -121,7 +170,13 @@ namespace cts { namespace core
 	{
 		utils::remove_erase(const_cast<Node&>(connection.m_startNode).m_outgoingConnections, &connection);
 		utils::remove_erase(const_cast<Node&>(connection.m_endNode).m_incomingConnections, &connection);
-		utils::remove_erase_if(m_connections, [connection](const std::unique_ptr<Connection>& ptr) { return &connection == ptr.get(); });
+		utils::remove_erase_unique_ptr(m_connections, &connection);
+	}
+
+
+	TrafficManager& Network::getTrafficManager()
+	{
+		return m_trafficMgr;
 	}
 
 

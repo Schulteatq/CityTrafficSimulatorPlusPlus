@@ -3,6 +3,7 @@
 
 #include <cts-core/coreapi.h>
 #include <cts-core/base/math.h>
+#include <cts-core/base/signal.h>
 
 #include <memory>
 #include <vector>
@@ -18,6 +19,7 @@ namespace cts { namespace core
 
 	public:
 		Node(const vec2& position);
+		~Node();
 
 		/// Removes the given connection from the incoming/outgoing list of connections.
 		/// Also updates the other participating node of the given connection.
@@ -45,6 +47,10 @@ namespace cts { namespace core
 		const std::vector<Connection*>& getOutgoingConnections() const;
 
 		Connection* getConnectionTo(const Node& targetNode) const;
+
+
+	public:
+		Signal<Node*> s_deleted;
 
 	private:
 		vec2 m_position;      ///< The world position of this node.

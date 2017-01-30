@@ -1,7 +1,13 @@
+#include <cts-core/base/utils.h>
+#include <cts-core/network/connection.h>
+#include <cts-core/network/node.h>
 #include <cts-core/network/routing.h>
+#include <cts-core/traffic/vehicle.h>
 
 
 #include <algorithm>
+#include <memory>
+#include <numeric>
 #include <queue>
 #include <set>
 
@@ -55,22 +61,18 @@ namespace cts { namespace core
 	}
 
 
-	Routing::Routing(const Node& startNode, const Node& targetNode, const AbstractVehicle& vehicle)
-	{
-		compute(startNode, targetNode, vehicle);
-	}
-
-
 	const std::vector<cts::core::Routing::Segment>& Routing::getSegments() const
 	{
 		return m_segments;
 	}
 
 
-	void Routing::compute(const Node& startNode, const Node& targetNode, const AbstractVehicle& vehicle)
+	void Routing::compute(const Node& startNode, const std::vector<Node*>& destinationNodes, const AbstractVehicle& vehicle)
 	{
 		// TODO: move these constants somewhere more central where they make sense
 		static const double VehicleOnRoutePenalty;
+		if (destinationNodes.empty())
+			return;
 
 		RandomAccessPriorityQueue< std::shared_ptr<OpenListElement> > openList;
 		std::set<const Node*> closedList;
@@ -81,12 +83,12 @@ namespace cts { namespace core
 			openList.pop();
 
 			// We found the shortest route, convert the OpenListElement into a list of routing segments
-			if (&ole->node == &targetNode)
+			if (utils::contains(destinationNodes, &ole->node))
 			{
 				m_segments.reserve(ole->numParents);
 				for (OpenListElement* currentNode = ole.get(); currentNode->parent != nullptr; currentNode = currentNode->parent.get())
 				{
-					m_segments.push_back(Segment{ &currentNode->parent->node, &currentNode->node });
+					m_segments.push_back(Segment{ currentNode->parent->node.getConnectionTo(currentNode->node), &currentNode->parent->node, &currentNode->node });
 				}
 
 				std::reverse(m_segments.begin(), m_segments.end());
@@ -111,7 +113,10 @@ namespace cts { namespace core
 				// consider the target velocity
 				connectionCosts *= 14.0 / std::max(/*vehicle.getTargetVelocity()*/ 14.0, conn->getTargetVelocity());
 				
-				const double remainingCosts = math::distance(conn->getEndNode().getPosition(), targetNode.getPosition());
+				const vec2 startPosition = conn->getEndNode().getPosition();
+				const double remainingCosts = utils::reduce(destinationNodes, std::numeric_limits<double>::max(), [startPosition](double minimum, Node* node) {
+					return std::min(minimum, math::distance(startPosition, node->getPosition()));
+				});
 
 				// check whether know already a better path to the end node of conn than the one we're currently examining.
 				const double fullCosts = ole->previousCosts + connectionCosts + remainingCosts;

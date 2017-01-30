@@ -2,6 +2,7 @@
 #define CTS_CORE_CONNECTION_H__
 
 #include <cts-core/coreapi.h>
+#include <cts-core/base/types.h>
 #include <cts-core/network/bezierparameterization.h>
 #include <cts-core/network/intersection.h>
 
@@ -52,9 +53,20 @@ namespace cts { namespace core
 		/// Recalculates the Bézier parameterization curve based on the node's properties.
 		void updateCurve();
 
+
+		/// Returns the first vehicle to be found behind \e arcPosition within \e searchDistance.
+		/// If \e searchDistance exceeds the length of this Connection, the function will recursively check
+		/// all following connections.
+		VehicleDistance getVehicleBehind(double arcPosition, double searchDistance) const;
+
+		/// Returns the first vehicle to be found before \e arcPosition within \e searchDistance.
+		/// If \e searchDistance exceeds the length of this Connection, the function will recursively check
+		/// all previous connections.
+		VehicleDistance getVehicleBefore(double arcPosition, double searchDistance) const;
+
 	private:
-		std::list<AbstractVehicle*>::const_iterator findVehicleBehind(double arcPosition) const;
-		std::list<AbstractVehicle*>::const_iterator findVehicleBefore(double arcPosition) const;
+		std::list<AbstractVehicle*>::const_iterator vehicleIteratorBehind(double arcPosition) const;
+		std::list<AbstractVehicle*>::const_iterator vehicleIteratorBefore(double arcPosition) const;
 
 		const Node& m_startNode;                    ///< Start network node of this connection.
 		const Node& m_endNode;                      ///< End network node of this connection.

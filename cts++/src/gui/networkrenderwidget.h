@@ -3,6 +3,7 @@
 
 #include <cts-core/coreapi.h>
 #include <cts-core/base/math.h>
+#include <cts-core/base/signal.h>
 
 #include <memory>
 #include <vector>
@@ -14,12 +15,13 @@ namespace core
 	class Network;
 	class Node;
 	class Routing;
+	class Simulation;
 }
 
 namespace gui
 {
 
-	class NetworkRenderWidget : public QWidget
+	class NetworkRenderWidget : public QWidget, public core::SignalReceiver
 	{
 		Q_OBJECT;
 	public:
@@ -31,6 +33,10 @@ namespace gui
 		core::Network* getNetwork() const;
 		/// Sets the network to display to \e value.
 		void setNetwork(core::Network* value);
+
+
+	signals:
+		void updateRequested();
 
 	protected:
 		enum class InteractionMode
@@ -65,7 +71,12 @@ namespace gui
 
 		QPainterPath roundedConvexHullPath(const std::vector<vec2>& points, double radius) const;
 
+
+		void onSimulationStep();
+
+
 		core::Network* m_network;
+		std::unique_ptr<core::Simulation> m_simulation;
 
 		std::vector<core::Node*> m_selectedStartNodes;
 		std::vector<core::Node*> m_selectedEndNodes;

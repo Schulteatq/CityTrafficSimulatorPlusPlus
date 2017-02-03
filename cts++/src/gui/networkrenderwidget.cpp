@@ -7,6 +7,7 @@
 #include <cts-core/network/network.h>
 #include <cts-core/network/node.h>
 #include <cts-core/network/routing.h>
+#include <cts-core/simulation/simulation.h>
 #include <cts-core/traffic/vehicle.h>
 
 #include <cmath>
@@ -38,6 +39,7 @@ namespace cts { namespace gui
 		, m_mouseDownPosition(0.0, 0.0)
 	{
 		setFocusPolicy(Qt::StrongFocus);
+		connect(this, SIGNAL(updateRequested()), this, SLOT(update()));
 	}
 
 
@@ -56,6 +58,16 @@ namespace cts { namespace gui
 	void NetworkRenderWidget::setNetwork(core::Network* value)
 	{
 		m_network = value;
+		if (m_network)
+		{
+			m_simulation = std::make_unique<core::Simulation>(*m_network);
+			m_simulation->s_stepped.connect(this, &NetworkRenderWidget::onSimulationStep);
+			m_simulation->start(1000);
+		}
+		else
+		{
+			m_simulation = nullptr;
+		}
 	}
 
 
@@ -343,6 +355,8 @@ namespace cts { namespace gui
 		p.translate(m_zoomOffset.x(), m_zoomOffset.y());
 		p.scale(m_zoomFactor, m_zoomFactor);
 
+		std::lock_guard<std::mutex> lockGuard(m_simulation->getMutex());
+
 		// draw connections
 		QBrush connectionBrush(Qt::gray);
 		for (auto& connection : m_network->getConnections())
@@ -444,6 +458,18 @@ namespace cts { namespace gui
 			p.drawPolyline(surroundingPoints, 5);
 		}
 
+		// draw vehicles
+		p.setPen(Qt::NoPen);
+		p.setBrush(QBrush(QColor::fromRgbF(0.0, 0.75, 1.0, 1.0)));
+		for (auto& it : m_network->getTrafficManager().getVehicles())
+		{
+			if (it->getCurrentConnection() == nullptr)
+				continue;
+
+			vec2 pos = it->getCurrentConnection()->getCurve().arcPositionToCoordinate(it->getCurrentArcPosition());
+			p.drawRoundedRect(pos.x() - 10, pos.y() - 10, 20, 20, 5, 5);
+		}
+
 		// draw rubberband
 		if (m_interactionmode == InteractionMode::DragRubberband)
 		{
@@ -498,6 +524,13 @@ namespace cts { namespace gui
 
 		return toReturn;
 	}
+
+
+	void NetworkRenderWidget::onSimulationStep()
+	{
+		emit updateRequested();
+	}
+
 
 }
 }

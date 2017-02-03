@@ -2,8 +2,10 @@
 #define CTS_CORE_SIMULATION_H__
 
 #include <cts-core/coreapi.h>
+#include <cts-core/base/signal.h>
 
 #include <memory>
+#include <mutex>
 
 namespace std
 {
@@ -20,6 +22,11 @@ namespace cts { namespace core
 	public:
 		Simulation(Network& network);
 		~Simulation();
+
+		/// Returns the randomizer used to generate deterministic random numbers for this Simulation.
+		const Randomizer& getRandomizer() const;
+
+		std::mutex& getMutex();
 
 		/// Returns the simulation speed.
 		double getSpeed() const;
@@ -38,10 +45,15 @@ namespace cts { namespace core
 		void step();
 
 		/// Starts the simulation for the given duration.
+		/// \param	duration	Duration of the simulation in seconds.
 		void start(double duration);
 
 		/// Stops the simulation if it's currently running.
 		void stop();
+
+
+	public:
+		Signal<> s_stepped;
 
 	private:
 		void simulationLoop();
@@ -56,6 +68,8 @@ namespace cts { namespace core
 		std::unique_ptr<std::thread> m_simulationThread;
 		std::unique_ptr<Randomizer> m_randomizer;
 		Network& m_network;
+
+		std::mutex m_mutex;
 	};
 
 

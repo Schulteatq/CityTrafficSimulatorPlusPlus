@@ -7,8 +7,8 @@
 int main(int argc, char** argv)
 {
 	cts::core::Network network;
-	network.importLegacyXml("minimal.xml");
-	//network.importLegacyXml("network.xml");
+	//network.importLegacyXml("minimal.xml");
+	network.importLegacyXml("network.xml");
 
 	QApplication app(argc, argv);
 	QMainWindow mw;

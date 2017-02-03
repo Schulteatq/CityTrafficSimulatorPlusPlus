@@ -61,7 +61,7 @@ namespace cts { namespace core
 	}
 
 
-	const std::vector<cts::core::Routing::Segment>& Routing::getSegments() const
+	const std::vector<Routing::Segment>& Routing::getSegments() const
 	{
 		return m_segments;
 	}

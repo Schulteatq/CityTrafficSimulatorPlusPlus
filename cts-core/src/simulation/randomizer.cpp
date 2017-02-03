@@ -1,4 +1,4 @@
-#include <cts-core/base/randomizer.h>
+#include <cts-core/simulation/randomizer.h>
 
 #include <cassert>
 #include <limits>
@@ -30,14 +30,14 @@ namespace cts { namespace core
 	}
 
 
-	uint32_t Randomizer::nextInt(uint32_t modulus)
+	uint32_t Randomizer::nextInt(uint32_t modulus) const
 	{
 		assert(modulus <= m_pimpl->engine.max());
 		return m_pimpl->engine() % modulus;
 	}
 
 
-	double Randomizer::nextDouble()
+	double Randomizer::nextDouble() const
 	{
 		return double(m_pimpl->engine()) / double(m_pimpl->engine.max());
 	}

@@ -26,14 +26,19 @@ namespace cts { namespace core
 		double getEffectiveTargetVelocity() const;
 
 		const Connection* getCurrentConnection() const;
+		void setCurrentConnection(const Connection* value);
 
 		double getCurrentArcPosition() const;
+		void setCurrentArcPosition(double value);
 
 		double getLength() const;
 
 
 
-		virtual double think(Routing& routing, double arcPos) const;
+		void think();
+		double think(const Routing& routing, double arcPos) const;
+
+		void move(double tickLength);
 
 
 		/// Calculates the desired distance with respect to the given parameters.
@@ -54,7 +59,7 @@ namespace cts { namespace core
 		virtual double getAcceleration(double velocity, double desiredVelocity, double distance, double vDiff) const = 0;
 
 	protected:
-		double thinkOfVehiclesInFront(Routing& routing, double arcPos) const;
+		double thinkOfVehiclesInFront(const Routing& routing, double arcPos) const;
 	
 
 		Routing m_routing;

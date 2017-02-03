@@ -1,5 +1,5 @@
-#include <cts-core/base/randomizer.h>
 #include <cts-core/network/network.h>
+#include <cts-core/simulation/randomizer.h>
 #include <cts-core/simulation/simulation.h>
 
 #include <cassert>
@@ -12,7 +12,7 @@ namespace cts { namespace core
 
 	Simulation::Simulation(Network& network)
 		: m_speed(1.0)
-		, m_ticksPerSecond(15.0)
+		, m_ticksPerSecond(25.0)
 		, m_duration(0.0)
 		, m_currentTime(0.0)
 		, m_stopSimulation(false)
@@ -26,6 +26,18 @@ namespace cts { namespace core
 	Simulation::~Simulation()
 	{
 		stop();
+	}
+
+
+	const Randomizer& Simulation::getRandomizer() const
+	{
+		return *m_randomizer;
+	}
+
+
+	std::mutex& Simulation::getMutex()
+	{
+		return m_mutex;
 	}
 
 
@@ -63,7 +75,9 @@ namespace cts { namespace core
 
 	void Simulation::step()
 	{
-		m_network.getTrafficManager().tick(1.0 / m_ticksPerSecond, *m_randomizer);
+		std::lock_guard<std::mutex> lockGuard(m_mutex);
+		m_network.getTrafficManager().tick(*this, 1.0 / m_ticksPerSecond);
+		s_stepped.emitSignal();
 	}
 
 

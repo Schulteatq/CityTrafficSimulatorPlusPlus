@@ -26,10 +26,10 @@ namespace cts { namespace core
 
 		/// Generates a new integer random value in the range [0, modulus).
 		/// \param  modulus		Modulus for the generated random value.
-		uint32_t nextInt(uint32_t modulus);
+		uint32_t nextInt(uint32_t modulus) const;
 		
 		/// Generates a new double random value in the range [0, 1].
-		double nextDouble();
+		double nextDouble() const;
 
 	private:
 		// we don't want to expose the expensive std::random stuff here.

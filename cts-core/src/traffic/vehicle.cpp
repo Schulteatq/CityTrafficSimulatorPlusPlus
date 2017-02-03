@@ -57,6 +57,10 @@ namespace cts { namespace core
 	{
 		// FIXME: *this not fully constructed?!
 		m_routing.compute(start, destination, *this);
+
+		//assert(!m_routing.getSegments().empty());
+		if (!m_routing.getSegments().empty())
+			m_currentConnection = m_routing.getSegments()[0].connection;
 	}
 
 
@@ -78,9 +82,21 @@ namespace cts { namespace core
 	}
 
 
+	void AbstractVehicle::setCurrentConnection(const Connection* value)
+	{
+		m_currentConnection = value;
+	}
+
+
 	double AbstractVehicle::getCurrentArcPosition() const
 	{
 		return m_currentArcPosition;
+	}
+
+
+	void AbstractVehicle::setCurrentArcPosition(double value)
+	{
+		m_currentArcPosition = value;
 	}
 
 
@@ -90,18 +106,50 @@ namespace cts { namespace core
 	}
 
 
-	double AbstractVehicle::think(Routing& routing, double arcPos) const
+	void AbstractVehicle::think()
+	{
+		m_acceleration = think(m_routing, m_currentArcPosition);
+	}
+
+
+	double AbstractVehicle::think(const Routing& routing, double arcPos) const
 	{
 		if (routing.getSegments().empty())
 			return 0.0;
 
 		// TODO...
-		double minAcceleration = 0.0;
+		double minAcceleration = thinkOfVehiclesInFront(routing, arcPos);
 		return minAcceleration;
 	}
 
 
-	double AbstractVehicle::thinkOfVehiclesInFront(Routing& routing, double arcPos) const
+	void AbstractVehicle::move(double tickLength)
+	{
+		if (m_currentConnection == nullptr)
+			return;
+
+		m_velocity = std::max(0.0, m_velocity + m_acceleration);
+		const double arcLengthToMove = m_velocity * tickLength * 10.0;
+
+		m_currentArcPosition += arcLengthToMove;
+		if (m_currentArcPosition > m_currentConnection->getCurve().getArcLength())
+		{
+			m_currentArcPosition -= m_currentConnection->getCurve().getArcLength();
+			if (m_routing.getSegments().size() == 1)
+			{
+				m_currentConnection = nullptr;
+				return;
+			}
+			else
+			{
+				m_currentConnection = m_routing.getSegments()[1].connection;
+				m_routing.compute(m_currentConnection->getStartNode(), m_destinationNodes, *this);
+			}
+		}
+	}
+
+
+	double AbstractVehicle::thinkOfVehiclesInFront(const Routing& routing, double arcPos) const
 	{
 		static const double lookaheadDistance = 768.0;
 

@@ -3,7 +3,6 @@
 
 #include <cts-core/coreapi.h>
 #include <cts-core/base/signal.h>
-#include <cts-core/base/tickable.h>
 #include <cts-core/base/utils.h>
 #include <cts-core/network/location.h>
 
@@ -13,13 +12,14 @@
 namespace cts { namespace core
 {
 	class AbstractVehicle;
+	class Simulation;
 
 	/**
 	 * Manager class for the traffic of the network. 
 	 * 
 	 * TrafficManager takes care of spawning vehicles according to the configured traffic density.
 	 */
-	class CTS_CORE_API TrafficManager : public Tickable, public utils::NotCopyable
+	class CTS_CORE_API TrafficManager : public utils::NotCopyable
 	{
 	public:
 		/// Structure describing the traffic volume from a given location toward a given destination.
@@ -49,14 +49,14 @@ namespace cts { namespace core
 
 		const std::vector< std::unique_ptr<AbstractVehicle> >& getVehicles() const;
 
-		virtual void tick(double tickLength, Randomizer& randomizer) override;
+		void tick(const Simulation& simulation, double tickLength);
 
 	public:
 		Signal<AbstractVehicle*> s_vehicleSpawned;
 
 	private:
-		void spawnVehicles(double tickLength, Randomizer& randomizer);
-		void tickVehicles(double tickLength, Randomizer& randomizer);
+		void spawnVehicles(const Simulation& simulation, double tickLength);
+		void tickVehicles(const Simulation& simulation, double tickLength);
 
 
 		std::vector< std::unique_ptr<TrafficVolume> > m_volumes;

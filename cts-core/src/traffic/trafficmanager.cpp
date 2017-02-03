@@ -1,7 +1,8 @@
-#include <cts-core/base/randomizer.h>
 #include <cts-core/network/connection.h>
 #include <cts-core/network/node.h>
 #include <cts-core/network/routing.h>
+#include <cts-core/simulation/randomizer.h>
+#include <cts-core/simulation/simulation.h>
 #include <cts-core/traffic/trafficmanager.h>
 #include <cts-core/traffic/vehicle.h>
 
@@ -60,14 +61,17 @@ namespace cts { namespace core
 	}
 
 
-	void TrafficManager::tick(double tickLength, Randomizer& randomizer)
+	void TrafficManager::tick(const Simulation& simulation, double tickLength)
 	{
-		spawnVehicles(tickLength, randomizer);
-		tickVehicles(tickLength, randomizer);
+		spawnVehicles(simulation, tickLength);
+		tickVehicles(simulation, tickLength);
+
+		// clean up vehicles that reached their destination
+		utils::remove_erase_if(m_vehicles, [](const std::unique_ptr<AbstractVehicle>& v) { return v->getCurrentConnection() == nullptr; });
 	}
 
 
-	void TrafficManager::spawnVehicles(double tickLength, Randomizer& randomizer)
+	void TrafficManager::spawnVehicles(const Simulation& simulation, double tickLength)
 	{
 		const double time = tickLength * m_globalTrafficMultiplier;
 		if (time <= 0.0)
@@ -75,10 +79,10 @@ namespace cts { namespace core
 
 		for (auto& volume : m_volumes)
 		{
-			if (volume->start.getNodes().empty() || volume->destination.getNodes().empty())
+			if (volume->carsPerHour <= 0 || volume->start.getNodes().empty() || volume->destination.getNodes().empty())
 				continue;
 
-			const uint32_t randomCar = randomizer.nextInt(int(ceil(3600.0 / (time * volume->carsPerHour))));
+			const uint32_t randomCar = simulation.getRandomizer().nextInt(int(ceil(3600.0 / (time * volume->carsPerHour))));
 			if (randomCar == 0)
 			{
 				// Since the place where the vehicle should spawn might be occupied at this very moment, 
@@ -91,7 +95,7 @@ namespace cts { namespace core
 
 		for (auto& volume : m_vehiclesToSpawn)
 		{
-			const uint32_t startIndex = randomizer.nextInt(uint32_t(volume->start.getNodes().size()));
+			const uint32_t startIndex = simulation.getRandomizer().nextInt(uint32_t(volume->start.getNodes().size()));
 			const Node* start = volume->start.getNodes()[startIndex];
 
 			// make sure that there is sufficient space at this location.
@@ -112,7 +116,9 @@ namespace cts { namespace core
 			if (canSpawn)
 			{
 				m_vehicles.push_back(std::make_unique< TypedVehicle<IdmMobil> >(*start, volume->destination.getNodes(), 42));
-				s_vehicleSpawned.emitSignal(m_vehicles.back().get());
+				AbstractVehicle* v = m_vehicles.back().get();
+				v->setCurrentArcPosition(0.0);
+				s_vehicleSpawned.emitSignal(v);
 				volume = nullptr;
 			}
 		}
@@ -122,11 +128,16 @@ namespace cts { namespace core
 	}
 	
 
-	void TrafficManager::tickVehicles(double tickLength, Randomizer& randomizer)
+	void TrafficManager::tickVehicles(const Simulation& simulation, double tickLength)
 	{
 		for (auto& vehicle : m_vehicles)
 		{
-			
+			vehicle->think();
+		}
+
+		for (auto& vehicle : m_vehicles)
+		{
+			vehicle->move(tickLength);
 		}
 	}
 

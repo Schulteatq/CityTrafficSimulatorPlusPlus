@@ -8,11 +8,14 @@ namespace cts
 {
 	namespace utils
 	{
+		/// Utility base class for non-copyable but movable classes.
 		struct NotCopyable
 		{
 			NotCopyable() = default;
 			NotCopyable(const NotCopyable&) = delete;
 			NotCopyable& operator=(const NotCopyable&) = delete;
+			NotCopyable(NotCopyable&&) = default;
+			NotCopyable& operator=(NotCopyable&&) = default;
 		};
 
 

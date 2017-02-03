@@ -10,6 +10,7 @@
 #include <cts-core/traffic/vehicle.h>
 
 #include <cmath>
+#include <iostream>
 #include <vector>
 
 #include <QtGui/QPainter>
@@ -77,7 +78,7 @@ namespace cts { namespace gui
 		case InteractionMode::None:
 			return;
 		case InteractionMode::MoveCanvas:
-			m_zoomOffset = offset;
+			m_zoomOffset += offset;
 			break;
 		case InteractionMode::MoveNode:
 			for (auto& ns : m_selectedNodes)

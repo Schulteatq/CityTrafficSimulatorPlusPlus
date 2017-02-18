@@ -2,6 +2,7 @@
 
 #include <cts-core/base/algorithmicgeometry.h>
 #include <cts-core/base/bounds.h>
+#include <cts-core/base/log.h>
 #include <cts-core/network/bezierparameterization.h>
 #include <cts-core/network/connection.h>
 #include <cts-core/network/network.h>
@@ -90,6 +91,7 @@ namespace cts { namespace gui
 		case InteractionMode::None:
 			return;
 		case InteractionMode::MoveCanvas:
+			LOG_DEBUG("gui.NetworkRenderWidget", "[" << e->pos().x() << ", " << e->pos().y() << "], " << m_zoomOffset << ", " << offset << "\n");
 			m_zoomOffset += offset;
 			break;
 		case InteractionMode::MoveNode:

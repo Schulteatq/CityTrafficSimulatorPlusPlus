@@ -1,4 +1,5 @@
 #include <cts-core/network/network.h>
+#include <cts-core/base/log.h>
 #include <cts-core/base/utils.h>
 
 #include <tinyxml2.h>
@@ -21,6 +22,8 @@ namespace cts { namespace core
 
 	void Network::importLegacyXml(const std::string& filename)
 	{
+		LOG_TRACE_GUARD("core.Network")
+
 		// FIXME: this code lacks error checking at an insane level...
 		tinyxml2::XMLDocument doc;
 		doc.LoadFile(filename.c_str());

@@ -1,3 +1,4 @@
+#include <cts-core/base/log.h>
 #include <cts-core/network/connection.h>
 #include <cts-core/network/node.h>
 #include <cts-core/network/routing.h>
@@ -63,11 +64,21 @@ namespace cts { namespace core
 
 	void TrafficManager::tick(const Simulation& simulation, double tickLength)
 	{
-		spawnVehicles(simulation, tickLength);
+		{
+			std::lock_guard<std::mutex> lockGuard(simulation.getMutex());
+			spawnVehicles(simulation, tickLength);
+		}
 		tickVehicles(simulation, tickLength);
 
-		// clean up vehicles that reached their destination
-		utils::remove_erase_if(m_vehicles, [](const std::unique_ptr<AbstractVehicle>& v) { return v->getCurrentConnection() == nullptr; });
+		{
+			// clean up vehicles that reached their destination
+			std::lock_guard<std::mutex> lockGuard(simulation.getMutex());
+			const auto vc = m_vehicles.size();
+			utils::remove_erase_if(m_vehicles, [](const std::unique_ptr<AbstractVehicle>& v) { return v->getCurrentConnection() == nullptr; });
+			const auto vc2 = m_vehicles.size();
+			if (vc2 < vc)
+				LOG_DEBUG("core.TrafficManager", "Removed " << (vc - vc2) << " vehicles.");
+		}
 	}
 
 

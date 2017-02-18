@@ -26,7 +26,7 @@ namespace cts { namespace core
 		/// Returns the randomizer used to generate deterministic random numbers for this Simulation.
 		const Randomizer& getRandomizer() const;
 
-		std::mutex& getMutex();
+		std::mutex& getMutex() const;
 
 		/// Returns the simulation speed.
 		double getSpeed() const;

@@ -11,7 +11,7 @@ namespace cts { namespace core
 
 
 	Simulation::Simulation(Network& network)
-		: m_speed(1.0)
+		: m_speed(2.0)
 		, m_ticksPerSecond(25.0)
 		, m_duration(0.0)
 		, m_currentTime(0.0)
@@ -35,9 +35,9 @@ namespace cts { namespace core
 	}
 
 
-	std::mutex& Simulation::getMutex()
+	std::mutex& Simulation::getMutex() const
 	{
-		return m_mutex;
+		return const_cast<std::mutex&>(m_mutex);
 	}
 
 
@@ -75,7 +75,6 @@ namespace cts { namespace core
 
 	void Simulation::step()
 	{
-		std::lock_guard<std::mutex> lockGuard(m_mutex);
 		m_network.getTrafficManager().tick(*this, 1.0 / m_ticksPerSecond);
 		s_stepped.emitSignal();
 	}

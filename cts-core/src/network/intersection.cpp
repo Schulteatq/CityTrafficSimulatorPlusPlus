@@ -1,3 +1,4 @@
+#include <cts-core/base/log.h>
 #include <cts-core/network/connection.h>
 #include <cts-core/network/intersection.h>
 #include <cts-core/network/node.h>
@@ -64,6 +65,14 @@ namespace cts { namespace core
 	}
 
 
+	const Connection& Intersection::getOtherConnection(const Connection& connection) const
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);
+		return (&connection == m_aConnection) ? *m_bConnection : *m_aConnection;
+
+	}
+
+
 	double Intersection::getFirstTime() const
 	{
 		return m_aTime;
@@ -76,6 +85,13 @@ namespace cts { namespace core
 	}
 
 
+	double Intersection::getMyTime(const Connection& connection) const
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);
+		return (&connection == m_aConnection) ? m_aTime : m_bTime;
+	}
+
+
 	double Intersection::getFirstArcPosition() const
 	{
 		return m_aArcPosition;
@@ -85,6 +101,13 @@ namespace cts { namespace core
 	double Intersection::getSecondArcPosition() const
 	{
 		return m_bArcPosition;
+	}
+
+
+	double Intersection::getMyArcPosition(const Connection& connection) const
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);
+		return (&connection == m_aConnection) ? m_aArcPosition : m_bArcPosition;
 	}
 
 
@@ -103,6 +126,91 @@ namespace cts { namespace core
 	double Intersection::getWaitingDistance() const
 	{
 		return m_waitingDistance;
+	}
+
+
+	void Intersection::registerVehicle(const AbstractVehicle& vehicle, const Connection& connection, double remainingDistance, vec2 blockingTime)
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);		
+		auto& theMap = (&connection == m_aConnection) ? m_aCrossingVehicles : m_bCrossingVehicles;
+
+		auto it = theMap.find(&vehicle);
+		if (it != theMap.end())
+		{
+			// vehicle already registered, update CrossingVehicleInfo struct
+			it->second.remainingDistance = remainingDistance;
+			it->second.blockingTime = blockingTime;
+			it->second.willWaitInFront = false;
+		}
+		else
+		{
+			theMap.emplace_hint(it, &vehicle, CrossingVehicleInfo{ blockingTime[0], remainingDistance, blockingTime, false });
+		}
+	}
+
+
+	void Intersection::updateVehicleWait(const AbstractVehicle& vehicle, const Connection& connection, bool willWaitInFront)
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);
+		auto& theMap = (&connection == m_aConnection) ? m_aCrossingVehicles : m_bCrossingVehicles;
+
+		auto it = theMap.find(&vehicle);
+		assert(it != theMap.end());
+
+		if (it != theMap.end())
+			it->second.willWaitInFront = willWaitInFront;
+	}
+
+
+	void Intersection::unregisterVehicle(const AbstractVehicle& vehicle, const Connection& connection)
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);
+		auto& theMap = (&connection == m_aConnection) ? m_aCrossingVehicles : m_bCrossingVehicles;
+
+		auto it = theMap.find(&vehicle);
+		if (it != theMap.end())
+			theMap.erase(it);
+		else
+			LOG_WARN("Intersection", "Trying to unregister unknown vehicle.");
+	}
+
+
+	std::vector<Intersection::CrossingVehicleInfo> Intersection::computeInterferingVehicles(const AbstractVehicle& vehicle, const Connection& connection)
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);
+		auto& thisMap = (&connection == m_aConnection) ? m_aCrossingVehicles : m_bCrossingVehicles;
+		auto& otherMap = (&connection == m_aConnection) ? m_bCrossingVehicles : m_aCrossingVehicles;
+
+		assert(thisMap.find(&vehicle) != thisMap.end());
+		auto thisCvt = thisMap[&vehicle];
+
+		std::vector<CrossingVehicleInfo> toReturn;
+		toReturn.reserve(otherMap.size());
+
+		if (&m_aConnection->getStartNode() != &m_bConnection->getEndNode() || (m_waitingDistance < m_aArcPosition && m_waitingDistance < m_bArcPosition))
+		{
+			for (auto& it : otherMap)
+			{
+				auto& otherCvt = it.second;
+				if ((!otherCvt.willWaitInFront || otherCvt.remainingDistance < 0)
+					&& !(thisCvt.blockingTime[0] > otherCvt.blockingTime[1] || thisCvt.blockingTime[1] < otherCvt.blockingTime[0])) // computes intersectino of blocking time intervals
+				{
+					toReturn.push_back(otherCvt);
+				}
+			}
+		}
+
+		return toReturn;
+	}
+
+
+	Intersection::CrossingVehicleInfo& Intersection::getCrossingVehicleInfo(const AbstractVehicle& vehicle, const Connection& connection)
+	{
+		assert(&connection == m_aConnection || &connection == m_bConnection);
+		auto& thisMap = (&connection == m_aConnection) ? m_aCrossingVehicles : m_bCrossingVehicles;
+
+		assert(thisMap.find(&vehicle) != thisMap.end());
+		return thisMap[&vehicle];
 	}
 
 

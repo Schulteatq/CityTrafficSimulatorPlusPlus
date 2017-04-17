@@ -38,6 +38,7 @@ namespace cts { namespace gui
 		, m_zoomOffset(0.0, 0.0)
 		, m_interactionmode(InteractionMode::None)
 		, m_mouseDownPosition(0.0, 0.0)
+		, m_drawDebugInfo(false)
 	{
 		setFocusPolicy(Qt::StrongFocus);
 		connect(this, SIGNAL(updateRequested()), this, SLOT(update()));
@@ -344,6 +345,13 @@ namespace cts { namespace gui
 				m_selectedEndNodes.push_back(ns.node);
 			}
 			break;
+		case Qt::Key_D:
+			m_drawDebugInfo = !m_drawDebugInfo;
+			break;
+		case  Qt::Key_Space:
+			m_simulation->stop();
+			m_simulation->step();
+			break;
 		}
 	}
 
@@ -441,23 +449,50 @@ namespace cts { namespace gui
 			}
 		}
 
-		// draw Intersections
-		p.setPen(Qt::darkMagenta);
-		p.setBrush(Qt::NoBrush);
-		for (auto& intersection : m_network->getIntersections())
+		// draw Intersections debug information
+		if (m_drawDebugInfo)
 		{
-			const core::BezierParameterization& ap = intersection.getFirstConnection().getCurve();
-			const core::BezierParameterization& bp = intersection.getSecondConnection().getCurve();
-			QPointF surroundingPoints[5]
+			p.setPen(Qt::darkMagenta);
+			p.setBrush(Qt::NoBrush);
+			for (auto& intersection : m_network->getIntersections())
 			{
-				toQt(ap.arcPositionToCoordinate(intersection.getFirstArcPosition() + intersection.getWaitingDistance())),
-				toQt(bp.arcPositionToCoordinate(intersection.getSecondArcPosition() + intersection.getWaitingDistance())),
-				toQt(ap.arcPositionToCoordinate(intersection.getFirstArcPosition() - intersection.getWaitingDistance())),
-				toQt(bp.arcPositionToCoordinate(intersection.getSecondArcPosition() - intersection.getWaitingDistance())),
-				toQt(ap.arcPositionToCoordinate(intersection.getFirstArcPosition() + intersection.getWaitingDistance()))
-			};
+				const core::BezierParameterization& ap = intersection->getFirstConnection().getCurve();
+				const core::BezierParameterization& bp = intersection->getSecondConnection().getCurve();
+				QPointF surroundingPoints[5]
+				{
+					toQt(ap.arcPositionToCoordinate(intersection->getFirstArcPosition() + intersection->getWaitingDistance())),
+					toQt(bp.arcPositionToCoordinate(intersection->getSecondArcPosition() + intersection->getWaitingDistance())),
+					toQt(ap.arcPositionToCoordinate(intersection->getFirstArcPosition() - intersection->getWaitingDistance())),
+					toQt(bp.arcPositionToCoordinate(intersection->getSecondArcPosition() - intersection->getWaitingDistance())),
+					toQt(ap.arcPositionToCoordinate(intersection->getFirstArcPosition() + intersection->getWaitingDistance()))
+				};
 
-			p.drawPolyline(surroundingPoints, 5);
+				p.drawPolyline(surroundingPoints, 5);
+
+				vec2 center = ap.arcPositionToCoordinate(intersection->getFirstArcPosition());
+				for (auto& it : intersection->m_aCrossingVehicles)
+				{
+					vec2 vpos = it.first->getCurrentConnection()->getCurve().arcPositionToCoordinate(it.first->getCurrentArcPosition());
+					if (it.second.willWaitInFront)
+						p.setPen(Qt::darkRed);
+					else
+						p.setPen(Qt::darkGreen);
+
+					p.drawLine(toQt(center), toQt(vpos));
+					p.drawText(toQt((center + vpos) / 2.0), tr("%1, %2").arg(it.second.blockingTime[0]).arg(it.second.blockingTime[1]));
+				}
+				for (auto& it : intersection->m_bCrossingVehicles)
+				{
+					vec2 vpos = it.first->getCurrentConnection()->getCurve().arcPositionToCoordinate(it.first->getCurrentArcPosition());
+					if (it.second.willWaitInFront)
+						p.setPen(Qt::darkRed);
+					else
+						p.setPen(Qt::darkGreen);
+
+					p.drawLine(toQt(center), toQt(vpos));
+					p.drawText(toQt((center + vpos) / 2.0), tr("%1, %2").arg(it.second.blockingTime[0]).arg(it.second.blockingTime[1]));
+				}
+			}
 		}
 
 		// draw vehicles
@@ -468,8 +503,25 @@ namespace cts { namespace gui
 			if (it->getCurrentConnection() == nullptr)
 				continue;
 
-			vec2 pos = it->getCurrentConnection()->getCurve().arcPositionToCoordinate(it->getCurrentArcPosition());
-			p.drawRoundedRect(pos.x() - 10, pos.y() - 10, 20, 20, 5, 5);
+			const double time = it->getCurrentConnection()->getCurve().arcPositionToTime(it->getCurrentArcPosition());
+			const vec2 pos = it->getCurrentConnection()->getCurve().timeToCoordinate(time);
+			const vec2 orientation = it->getCurrentConnection()->getCurve().derivateAtTime(time).normalized();
+			const vec2 normal = math::rotatedClockwise(orientation);
+
+			QPointF points[4]
+			{
+				toQt(pos - 8.0 * normal),
+				toQt(pos + 8.0 * normal),
+				toQt(pos - it->getLength() * orientation + 8.0 * normal),
+				toQt(pos - it->getLength() * orientation - 8.0 * normal)
+			};
+			p.drawPolygon(points, 4);
+
+			if (m_drawDebugInfo)
+			{
+				p.setPen(Qt::black);
+				p.drawText(toQt(pos), tr("%1").arg(it->debugId));
+			}
 		}
 
 		// draw rubberband

@@ -24,6 +24,9 @@ namespace cts { namespace core
 		friend class Network;
 
 	public:
+		// TODO: consider making vehicles const
+		using VehicleListType = std::list<AbstractVehicle*>;
+
 		/// Creates a new network connection with the given parameters.
 		/// The Bézier support points are taken from the start and end nodes.
 		/// \param	startNode		Start network node of this connection.
@@ -37,7 +40,7 @@ namespace cts { namespace core
 		/// Returns the Bézier curve parameterization of this connection.
 		const BezierParameterization& getCurve() const;
 		/// Returns the list of vehicles currently on this connection, sorted by their position.
-		const std::list<AbstractVehicle*>& getVehicles() const;
+		const VehicleListType& getVehicles() const;
 
 		/// Returns the priority of this network connection.
 		int getPriority() const;
@@ -54,6 +57,9 @@ namespace cts { namespace core
 		void updateCurve();
 
 
+		void addVehicle(AbstractVehicle* vehicle, double arcPosition);
+		void removeVehicle(AbstractVehicle* vehicle);
+
 		/// Returns the first vehicle to be found behind \e arcPosition within \e searchDistance.
 		/// If \e searchDistance exceeds the length of this Connection, the function will recursively check
 		/// all following connections.
@@ -64,9 +70,14 @@ namespace cts { namespace core
 		/// all previous connections.
 		VehicleDistance getVehicleBefore(double arcPosition, double searchDistance) const;
 
+
+		const std::vector<Intersection*>& getIntersections() const;
+
 	private:
-		std::list<AbstractVehicle*>::const_iterator vehicleIteratorBehind(double arcPosition) const;
-		std::list<AbstractVehicle*>::const_iterator vehicleIteratorBefore(double arcPosition) const;
+		VehicleListType::const_iterator vehicleIteratorBehind(double arcPosition) const;
+		VehicleListType::const_iterator vehicleIteratorBefore(double arcPosition) const;
+
+		void addIntersection(Intersection* intersection);
 
 		const Node& m_startNode;                    ///< Start network node of this connection.
 		const Node& m_endNode;                      ///< End network node of this connection.
@@ -75,8 +86,8 @@ namespace cts { namespace core
 		int m_priority;								///< Priority of this network connection.
 		double m_targetVelocity;					///< Target velocity of this network connection in m/s.
 
-		std::list<AbstractVehicle*> m_vehicles;     ///< List of vehicles currently on this connection, sorted by their position.
-		std::vector<Intersection> m_intersections;	///< List of intersections with other Connections, sorted by their position.
+		VehicleListType m_vehicles;					///< List of vehicles currently on this connection, sorted by their position.
+		std::vector<Intersection*> m_intersections;	///< List of intersections with other Connections, sorted by their position.
 	};
 
 }

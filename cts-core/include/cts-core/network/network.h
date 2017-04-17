@@ -2,6 +2,7 @@
 #define CTS_CORE_NETWORK_H__
 
 #include <cts-core/coreapi.h>
+#include <cts-core/base/utils.h>
 #include <cts-core/network/connection.h>
 #include <cts-core/network/intersection.h>
 #include <cts-core/network/node.h>
@@ -14,21 +15,17 @@
 namespace cts { namespace core
 {
 
-	class CTS_CORE_API Network
+	class CTS_CORE_API Network : public utils::NotCopyable
 	{
 	public:
 		using NodeListType = std::vector< std::unique_ptr<Node> >;
 		using ConnectionListType = std::vector< std::unique_ptr<Connection> >;
 		using VehicleListType = std::vector< std::unique_ptr<AbstractVehicle> >;
-		using IntersectionListType = std::vector<Intersection>;
+		using IntersectionListType = std::vector< std::unique_ptr<Intersection> >;
 
 
 		Network();
-
 		~Network();
-
-		Network(const Network&) = delete;
-		Network& operator=(const Network&) = delete;
 
 
 		void importLegacyXml(const std::string& filename);
@@ -57,7 +54,7 @@ namespace cts { namespace core
 		const IntersectionListType& getIntersections() const;
 
 	private:
-		std::vector<Intersection> computeIntersections(Connection& connection, ConnectionListType::iterator start, ConnectionListType::iterator end, double tolerance);
+		IntersectionListType computeIntersections(Connection& connection, ConnectionListType::iterator start, ConnectionListType::iterator end, double tolerance);
 
 		TrafficManager m_trafficMgr;
 

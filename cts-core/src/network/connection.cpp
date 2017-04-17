@@ -37,7 +37,7 @@ namespace cts { namespace core
 	}
 
 
-	const std::list<AbstractVehicle*>& Connection::getVehicles() const
+	const Connection::VehicleListType& Connection::getVehicles() const
 	{
 		return m_vehicles;
 	}
@@ -70,6 +70,23 @@ namespace cts { namespace core
 	void Connection::updateCurve()
 	{
 		m_curve = BezierParameterization(m_startNode.getPosition(), m_startNode.getPosition() + m_startNode.getOutSlope(), m_endNode.getPosition() - m_endNode.getInSlope(), m_endNode.getPosition());
+	}
+
+
+	void Connection::addVehicle(AbstractVehicle* vehicle, double arcPosition)
+	{
+		assert(std::find(m_vehicles.begin(), m_vehicles.end(), vehicle) == m_vehicles.end());
+
+		auto it = vehicleIteratorBehind(arcPosition);
+		m_vehicles.insert(it, vehicle);
+	}
+
+
+	void Connection::removeVehicle(AbstractVehicle* vehicle)
+	{
+		auto it = std::find(m_vehicles.begin(), m_vehicles.end(), vehicle);
+		if (it != m_vehicles.end())
+			m_vehicles.erase(it);
 	}
 
 
@@ -129,19 +146,35 @@ namespace cts { namespace core
 	}
 
 
-	std::list<AbstractVehicle*>::const_iterator Connection::vehicleIteratorBehind(double arcPosition) const
+	const std::vector<Intersection*>& Connection::getIntersections() const
+	{
+		return m_intersections;
+	}
+
+
+	Connection::VehicleListType::const_iterator Connection::vehicleIteratorBehind(double arcPosition) const
 	{
 		return std::find_if(m_vehicles.cbegin(), m_vehicles.cend(), [arcPosition](AbstractVehicle* v) { return v->getCurrentArcPosition() > arcPosition; });
 	}
 
 
-	std::list<AbstractVehicle*>::const_iterator Connection::vehicleIteratorBefore(double arcPosition) const
+	Connection::VehicleListType::const_iterator Connection::vehicleIteratorBefore(double arcPosition) const
 	{
 		auto rit = std::find_if(m_vehicles.crbegin(), m_vehicles.crend(), [arcPosition](AbstractVehicle* v) { return v->getCurrentArcPosition() < arcPosition; });
 		if (rit == m_vehicles.crend())
 			return m_vehicles.cend();
 		else
 			return (++rit).base();
+	}
+
+
+	void Connection::addIntersection(Intersection* intersection)
+	{
+		double insertArcPos = intersection->getMyArcPosition(*this);
+		auto it = std::lower_bound(m_intersections.begin(), m_intersections.end(), insertArcPos, [this](Intersection* lhs, double value) {
+			return lhs->getMyArcPosition(*this) < value;
+		});
+		m_intersections.insert(it, intersection);
 	}
 
 

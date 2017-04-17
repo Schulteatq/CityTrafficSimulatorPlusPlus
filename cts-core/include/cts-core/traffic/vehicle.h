@@ -4,6 +4,7 @@
 #include <cts-core/coreapi.h>
 #include <cts-core/network/routing.h>
 
+#include <deque>
 #include <vector>
 
 namespace cts { namespace core
@@ -14,15 +15,20 @@ namespace cts { namespace core
 	/**
 	 * Abstract base class for all vehicles that move through the network.
 	 */
-	class CTS_CORE_API AbstractVehicle
+	class CTS_CORE_API AbstractVehicle : public utils::NotCopyable
 	{
 	public:
+		int debugId;
+
 		AbstractVehicle(const Node& start, const std::vector<Node*> destination, double targetVelocity);
 		virtual ~AbstractVehicle() = default;
 
 
 
+		/// Returns the target velocity of this vehicle if it was free from any outer constraints.
 		double getTargetVelocity() const;
+		/// Returns the effective target velocity considering the target velocity multiplier and the 
+		/// maximum velocity of the vehicle's current connection. 
 		double getEffectiveTargetVelocity() const;
 
 		const Connection* getCurrentConnection() const;
@@ -34,6 +40,7 @@ namespace cts { namespace core
 		double getLength() const;
 
 
+		void prepare(double currentTime);
 
 		void think();
 		double think(const Routing& routing, double arcPos) const;
@@ -58,11 +65,45 @@ namespace cts { namespace core
 		/// \param	vDiff               Velocity difference to vehicle in front.
 		virtual double getAcceleration(double velocity, double desiredVelocity, double distance, double vDiff) const = 0;
 
-	protected:
-		double thinkOfVehiclesInFront(const Routing& routing, double arcPos) const;
-	
 
-		Routing m_routing;
+		double computeArrivalTime(double distance) const;
+
+	protected:
+		/// Structure encapsulating a registered intersection.
+		/// Takes care of registering/unregistering.
+		struct SpecificIntersection : public utils::NotCopyable
+		{
+			SpecificIntersection(const AbstractVehicle* vehicle, Intersection* intersection, const Connection* connection);
+			~SpecificIntersection();
+
+			void update(double remainingDistance, vec2 blockingTime) const;
+			void setWait(bool willWaitInFront) const;
+
+			const AbstractVehicle* vehicle;
+			Intersection* intersection;
+			const Connection* connection;
+		};
+
+		struct AccelerationDistance
+		{
+			bool considerable; //< FIXME: find a better name
+			double acceleration;
+			double distance;
+		};
+
+		AccelerationDistance thinkOfVehiclesInFront(const Routing& routing, double arcPos, double lookaheadDistance) const;
+
+		AccelerationDistance thinkOfIntersection(const Routing& routing, double arcPos, double lookaheadDistance) const;
+
+		/// Computes the new routing for this vehicle and updates all internal (e.g. registered intersections) data accordingly.
+		/// \param  startNode			Start node
+		/// \param  destinationNodes	Destination nodes
+		void updateRouting(const Node& startNode, std::vector<Node*> destinationNodes);
+
+		double computeDistance(const Connection& connection, double arcPos) const;
+	
+		static const double m_lookaheadDistance;
+
 		double m_targetVelocity;
 		double m_multiplierTargetVelocity;
 		double m_acceleration;
@@ -72,6 +113,12 @@ namespace cts { namespace core
 		std::vector<Node*> m_destinationNodes;
 		double m_currentArcPosition;
 		double m_length;
+
+	private:
+		Routing m_routing;						///< Route that the vehicle is planning to use, includes current connection
+		std::list<SpecificIntersection> m_registeredIntersections;
+		std::vector<const Connection*> m_visitedConnections;
+
 	};
 
 

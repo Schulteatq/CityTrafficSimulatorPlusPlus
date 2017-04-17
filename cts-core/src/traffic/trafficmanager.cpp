@@ -30,7 +30,7 @@ namespace cts { namespace core
 
 
 	TrafficManager::TrafficManager()
-		: m_globalTrafficMultiplier(1.0)
+		: m_globalTrafficMultiplier(1.2)
 	{}
 
 
@@ -67,8 +67,8 @@ namespace cts { namespace core
 		{
 			std::lock_guard<std::mutex> lockGuard(simulation.getMutex());
 			spawnVehicles(simulation, tickLength);
+			tickVehicles(simulation, tickLength);
 		}
-		tickVehicles(simulation, tickLength);
 
 		{
 			// clean up vehicles that reached their destination
@@ -141,6 +141,11 @@ namespace cts { namespace core
 
 	void TrafficManager::tickVehicles(const Simulation& simulation, double tickLength)
 	{
+		for (auto& vehicle : m_vehicles)
+		{
+			vehicle->prepare(simulation.getCurrentTime());
+		}
+
 		for (auto& vehicle : m_vehicles)
 		{
 			vehicle->think();

@@ -36,8 +36,10 @@ namespace cts { namespace core
 		if (!layoutNode)
 			return;
 
-		m_title = layoutNode->FirstChildElement("title")->GetText();
-		m_description = layoutNode->FirstChildElement("infoText")->GetText();
+		if (layoutNode->FirstChildElement("title")->GetText())
+			m_title = layoutNode->FirstChildElement("title")->GetText();
+		if (layoutNode->FirstChildElement("infoText")->GetText())
+			m_description = layoutNode->FirstChildElement("infoText")->GetText();
 
 		std::map<int, Node*> nodeHashes;
 		for (tinyxml2::XMLElement* nodeElement = layoutNode->FirstChildElement("LineNode"); nodeElement != nullptr; nodeElement = nodeElement->NextSiblingElement("LineNode"))
@@ -78,11 +80,11 @@ namespace cts { namespace core
 		}
 
 
-		//for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
-		//{
-		//	auto ints = computeIntersections(**it, it, m_connections.end(), 1);
-		//	m_intersections.insert(m_intersections.end(), ints.begin(), ints.end());
-		//}
+		for (auto it = m_connections.begin(); it != m_connections.end(); ++it)
+		{
+			auto intersections = computeIntersections(**it, it, m_connections.end(), 4.0);
+			m_intersections.insert(m_intersections.end(), std::make_move_iterator(intersections.begin()), std::make_move_iterator(intersections.end()));
+		}
 
 
 		auto tvNode = rootNode->FirstChildElement("TrafficVolumes");
@@ -200,19 +202,19 @@ namespace cts { namespace core
 		return toReturn;
 	}
 
-	const std::vector< std::unique_ptr<Connection> >& Network::getConnections() const
+	const Network::ConnectionListType& Network::getConnections() const
 	{
 		return m_connections;
 	}
 
 
-	const std::vector< std::unique_ptr<AbstractVehicle> >& Network::getVehicles() const
+	const Network::VehicleListType& Network::getVehicles() const
 	{
 		return m_vehicles;
 	}
 
 
-	const std::vector<cts::core::Intersection>& Network::getIntersections() const
+	const Network::IntersectionListType& Network::getIntersections() const
 	{
 		return m_intersections;
 	}
@@ -247,7 +249,7 @@ namespace cts { namespace core
 		}
 	}
 
-	std::vector<Intersection> Network::computeIntersections(Connection& connection, ConnectionListType::iterator start, ConnectionListType::iterator end, double tolerance)
+	Network::IntersectionListType Network::computeIntersections(Connection& connection, ConnectionListType::iterator start, ConnectionListType::iterator end, double tolerance)
 	{
 		std::vector<ParameterizationInfo> bigParts{ { &connection.getCurve(), 0.0, 1.0 } };
 		std::vector<ParameterizationInfo> smallParts;
@@ -268,7 +270,7 @@ namespace cts { namespace core
 		}
 
 		// Collect all possible intersections in terms of parameterization times
-		std::vector<Intersection> toReturn;
+		IntersectionListType toReturn;
 		std::vector< std::pair<double, double> > intersectionTimes;
 		for (/**/; start != end; ++start)
 		{
@@ -292,6 +294,12 @@ namespace cts { namespace core
 
 			if (intersectionTimes.empty())
 				continue;
+			
+
+			// The following code does not work if we found only a single intersection.
+			// Instead of making it more complicated to support such scenarios, we simply duplicate the single found intersection.
+			if (intersectionTimes.size() == 1)
+				intersectionTimes.push_back(intersectionTimes[0]);
 
 			// merge intersections that are very close to each other
 			std::sort(intersectionTimes.begin(), intersectionTimes.end(), [](const std::pair<double, double>& lhs, const std::pair<double, double>& rhs) {
@@ -301,12 +309,15 @@ namespace cts { namespace core
 			size_t startIndex = 0;
 			double startArcPos = connection.getCurve().timeToArcPosition(intersectionTimes[0].first);
 			double lastArcPos = startArcPos;
-			for (size_t i = 1; i < intersectionTimes.size(); ++i)
+			for (size_t i = 0; i < intersectionTimes.size(); ++i)
 			{
 				const double currentArcPos = connection.getCurve().timeToArcPosition(intersectionTimes[i].first);
 				if (currentArcPos - lastArcPos > 42 || i+1 == intersectionTimes.size()) // FIXME: make constant configurable
 				{
-					toReturn.emplace_back(connection, intersectionTimes[startIndex].first + (intersectionTimes[i-1].first - intersectionTimes[startIndex].first) / 2.0, *rConn, intersectionTimes[startIndex + (i - 1 - startIndex) / 2].second);
+					toReturn.emplace_back(new Intersection(connection, intersectionTimes[startIndex].first + (intersectionTimes[i-1].first - intersectionTimes[startIndex].first) / 2.0, *rConn, intersectionTimes[startIndex + (i - 1 - startIndex) / 2].second));
+					connection.addIntersection(toReturn.back().get());
+					rConn->addIntersection(toReturn.back().get());
+
 					startIndex = i;
 					startArcPos = currentArcPos;
 					lastArcPos = currentArcPos;

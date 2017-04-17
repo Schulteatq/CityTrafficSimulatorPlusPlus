@@ -89,6 +89,7 @@ namespace gui
 		vec2 m_mouseDownPosition;
 		vec2 m_mousePosition;
 		std::vector<NodeSelection> m_selectedNodes;
+		bool m_drawDebugInfo;
 	};
 
 }

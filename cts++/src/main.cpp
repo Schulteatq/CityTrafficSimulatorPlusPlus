@@ -11,8 +11,9 @@ int main(int argc, char** argv)
 	cts::core::LogManager::get().addLogger(std::move(cs));
 
 	cts::core::Network network;
+	network.importLegacyXml("intersection.xml");
 	//network.importLegacyXml("minimal.xml");
-	network.importLegacyXml("network.xml");
+	//network.importLegacyXml("network.xml");
 
 	QApplication app(argc, argv);
 	QMainWindow mw;
@@ -22,6 +23,7 @@ int main(int argc, char** argv)
 	renderWidget.setMinimumSize(800, 600);
 	mw.setCentralWidget(&renderWidget);
 	mw.show();
+	mw.showMaximized();
 
 	return app.exec();
 }

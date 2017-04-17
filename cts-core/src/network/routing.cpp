@@ -69,6 +69,8 @@ namespace cts { namespace core
 
 	void Routing::compute(const Node& startNode, const std::vector<Node*>& destinationNodes, const AbstractVehicle& vehicle)
 	{
+		m_segments.clear();
+
 		// TODO: move these constants somewhere more central where they make sense
 		static const double VehicleOnRoutePenalty;
 		if (destinationNodes.empty())

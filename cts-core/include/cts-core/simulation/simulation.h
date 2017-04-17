@@ -28,6 +28,9 @@ namespace cts { namespace core
 
 		std::mutex& getMutex() const;
 
+		/// Returns the current simulation time.
+		double getCurrentTime() const;
+
 		/// Returns the simulation speed.
 		double getSpeed() const;
 		/// Sets the simulation speed, value must be >= 1.0.

@@ -20,9 +20,7 @@ namespace core
 		: m_supportPoints(rhs.m_supportPoints)
 		, m_bounds(rhs.m_bounds)
 		, m_lengthApproximationTable(rhs.m_lengthApproximationTable)
-	{
-
-	}
+	{}
 
 	BezierParameterization& BezierParameterization::operator=(BezierParameterization rhs)
 	{
@@ -111,6 +109,17 @@ namespace core
 
 		int index = int(time * (LengthApproximationTableSize - 1));
 		return m_lengthApproximationTable[index] + ((time * (LengthApproximationTableSize - 1)) - index) * (m_lengthApproximationTable[index + 1] - m_lengthApproximationTable[index]);
+	}
+
+
+	vec2 BezierParameterization::derivateAtTime(double time) const
+	{
+		const auto& p0 = m_supportPoints[0];
+		const auto& p1 = m_supportPoints[1];
+		const auto& p2 = m_supportPoints[2];
+		const auto& p3 = m_supportPoints[3];
+		//3 (-p0 + p1 + 2 (p0 - 2 p1 + p2) t + (-p0 + 3 p1 - 3 p2 + p3) t^2)
+		return 3.0 * (-p0 + p1 + 2.0 * (p0 - 2.0 * p1 + p2) * time + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * time * time);
 	}
 
 

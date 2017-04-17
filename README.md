@@ -1,5 +1,5 @@
 # CityTrafficSimulator++
-CityTrafficSimulator++ is a re-implementation of [CityTrafficSimulator](http://cts.cszb.net/) using modern C++ 11. While the core mechanics will still implement a microscopic traffic simulation software for small- to medium-sized traffic networks, the main motivation of this version is to have a much better software architecture. This should make implementing custom extensions and integrating CTS into third-party software much easier. Furthermore, I have a couple of ideas for cool features that would not be implementable as easy in the original version.
+CityTrafficSimulator++ is a re-implementation of [CityTrafficSimulator](http://www.citytrafficsimulator.de/) using modern C++ 11. While the core mechanics will still implement a microscopic traffic simulation software for small- to medium-sized traffic networks, the main motivation of this version is to have a much better software architecture. This should make implementing custom extensions and integrating CTS into third-party software much easier. Furthermore, I have a couple of ideas for cool features that would not be implementable as easy in the original version.
 
 
 ## Licensing

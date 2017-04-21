@@ -16,7 +16,9 @@ namespace cts { namespace core
 
 	Network::~Network()
 	{
-
+		m_trafficMgr.clearVehicles();
+		m_vehicles.clear();
+		m_intersections.clear();
 	}
 
 

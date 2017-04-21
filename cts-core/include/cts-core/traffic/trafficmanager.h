@@ -42,6 +42,9 @@ namespace cts { namespace core
 		~TrafficManager();
 
 
+		void clearVehicles();
+
+
 		TrafficVolume* addVolume(const std::vector<Node*>& start, const std::vector<Node*>& destination);
 		void removeVolume(TrafficVolume* volume);
 		const std::vector< std::unique_ptr<TrafficVolume> >& getVolumes() const;

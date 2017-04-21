@@ -68,6 +68,7 @@ namespace gui
 
 		virtual void paintEvent(QPaintEvent* e) override;
 
+		virtual void closeEvent(QCloseEvent* e) override;
 
 		QPainterPath roundedConvexHullPath(const std::vector<vec2>& points, double radius) const;
 

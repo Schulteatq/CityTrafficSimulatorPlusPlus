@@ -534,6 +534,12 @@ namespace cts { namespace gui
 	}
 
 
+	void NetworkRenderWidget::closeEvent(QCloseEvent* e)
+	{
+		m_simulation->stop();
+	}
+
+
 	QPainterPath NetworkRenderWidget::roundedConvexHullPath(const std::vector<vec2>& points, double radius) const
 	{
 		QPainterPath toReturn;

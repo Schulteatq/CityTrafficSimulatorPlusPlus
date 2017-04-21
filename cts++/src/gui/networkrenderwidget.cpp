@@ -479,7 +479,7 @@ namespace cts { namespace gui
 						p.setPen(Qt::darkGreen);
 
 					p.drawLine(toQt(center), toQt(vpos));
-					p.drawText(toQt((center + vpos) / 2.0), tr("%1, %2").arg(it.second.blockingTime[0]).arg(it.second.blockingTime[1]));
+					p.drawText(toQt((center + vpos) / 2.0), tr("d:%1, t: [%2, %3]").arg(it.second.remainingDistance).arg(it.second.blockingTime[0]).arg(it.second.blockingTime[1]));
 				}
 				for (auto& it : intersection->m_bCrossingVehicles)
 				{
@@ -490,7 +490,7 @@ namespace cts { namespace gui
 						p.setPen(Qt::darkGreen);
 
 					p.drawLine(toQt(center), toQt(vpos));
-					p.drawText(toQt((center + vpos) / 2.0), tr("%1, %2").arg(it.second.blockingTime[0]).arg(it.second.blockingTime[1]));
+					p.drawText(toQt((center + vpos) / 2.0), tr("d:%1, t: [%2, %3]").arg(it.second.remainingDistance).arg(it.second.blockingTime[0]).arg(it.second.blockingTime[1]));
 				}
 			}
 		}

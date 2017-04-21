@@ -139,6 +139,9 @@ namespace cts { namespace core
 			}
 			else
 			{
+				// All intersections between tailIt and noseIt are now considered as blocked, update them accordingly
+				// We use the convention that intersections that are blocked are marked with both remaining distance and arrival time 0.0.
+				noseIt->update(0.0, vec2(0.0, currentTime + computeArrivalTime(d + m_length + noseIt->intersection->getWaitingDistance())));
 				++noseIt;
 			}
 		}
@@ -148,7 +151,6 @@ namespace cts { namespace core
 		{
 			m_registeredIntersections.erase(m_registeredIntersections.begin(), tailIt);
 		}
-
 
 		// gather next intersections on my route and updated their registration
 		double startPosition = m_currentArcPosition;
@@ -313,6 +315,10 @@ namespace cts { namespace core
 			auto cvtList = si.intersection->computeInterferingVehicles(*this, *si.connection);
 			const Connection& otherConnection = si.intersection->getOtherConnection(*si.connection);
 
+			// We do not need to consider already blocked intersections
+			// (We really want to leave them as soon as possible, so don't even think of breaking for them ;))
+			if (myCvt.remainingDistance <= 0.0)
+				continue;
 
 			// If other connection is more important than mine
 			if (otherConnection.getPriority() > si.connection->getPriority())
@@ -324,18 +330,14 @@ namespace cts { namespace core
 
 				// Intersection is close to stop point so that vehicle will block this intersection => wait in front
 				if ((stopPoint > myCvt.remainingDistance) && (stopPoint - m_length - s0 < myCvt.remainingDistance) && (si.intersection->avoidBlocking()))
-				{
 					waitInFront = true;
-				}
 			}
 			// Both connections have the same priority
 			else if (otherConnection.getPriority() == si.connection->getPriority())
 			{
 				// Intersection is close to stop point so that vehicle will block this intersection => wait in front
 				if ((stopPoint > myCvt.remainingDistance) && (stopPoint - m_length - s0 < myCvt.remainingDistance) && (si.intersection->avoidBlocking()))
-				{
 					waitInFront = true;
-				}
 
 				// check at each intersection, which vehicle was there first
 				for (auto& otherCvt : cvtList)
@@ -346,6 +348,14 @@ namespace cts { namespace core
 					if (myCvt.originalArrivalTime > otherCvt.originalArrivalTime || otherCvt.remainingDistance < 0)
 					{
 						waitInFront = true;
+						break;
+					}
+
+					// I should also wait if the other vehicle is already blocking the intersection
+					if (otherCvt.remainingDistance <= 0.0)
+					{
+						waitInFront = true;
+						avoidBlocking = false;
 						break;
 					}
 				}
@@ -359,7 +369,7 @@ namespace cts { namespace core
 				// If otherwise the other vehicle is already blocking the intersection, I'm doing good in waiting in front of it.
 				for (auto& otherCvt : cvtList)
 				{
-					if (otherCvt.remainingDistance < 0)
+					if (otherCvt.remainingDistance <= 0)
 					{
 						waitInFront = true;
 						avoidBlocking = false;
@@ -381,6 +391,13 @@ namespace cts { namespace core
 					{
 						auto& prevSi = *rit;
 						auto& prevCvt = prevSi.intersection->getCrossingVehicleInfo(*this, *prevSi.connection);
+
+						// do not consider intersections that I am already blocking - I can't help this anymore
+						if (prevCvt.remainingDistance <= 0.0)
+						{
+							break;
+						}
+
 						double prevIntersectionEnd = prevCvt.remainingDistance + prevSi.intersection->getWaitingDistance();
 						// check whether intersection will be blocked
 						if (prevCvt.remainingDistance > -(m_length + prevSi.intersection->getWaitingDistance()) && blockedIntersectionStart - prevIntersectionEnd < m_length + s0)

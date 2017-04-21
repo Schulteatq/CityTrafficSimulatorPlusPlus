@@ -22,7 +22,7 @@ namespace cts { namespace core
 	}
 
 
-	void Node::disconnect(Connection& connection)
+	void Node::disconnect(Connection& /*connection*/)
 	{
 
 	}

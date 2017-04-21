@@ -204,11 +204,11 @@ namespace cts { namespace core
 
 	void AbstractVehicle::think()
 	{
-		m_acceleration = think(m_routing, m_currentArcPosition);
+		m_acceleration = think(m_routing);
 	}
 
 
-	double AbstractVehicle::think(const Routing& routing, double arcPos) const
+	double AbstractVehicle::think(const Routing& routing) const
 	{
 		if (routing.getSegments().empty())
 			return 0.0;
@@ -216,8 +216,8 @@ namespace cts { namespace core
 		assert(m_currentConnection == m_routing.getSegments()[0].connection);
 
 		// TODO...
-		AccelerationDistance ad = thinkOfVehiclesInFront(routing, arcPos, m_lookaheadDistance);
-		AccelerationDistance ad2 = thinkOfIntersection(routing, arcPos, ad.considerable ? ad.distance : 0.0);
+		AccelerationDistance ad = thinkOfVehiclesInFront(m_lookaheadDistance);
+		AccelerationDistance ad2 = thinkOfIntersection(ad.considerable ? ad.distance : 0.0);
 		//minAcceleration = std::min(minAcceleration, getAcceleration(m_velocity, getEffectiveTargetVelocity(), distanceToIntersection, m_velocity));
 		return std::min(ad.acceleration, ad2.acceleration);
 	}
@@ -282,9 +282,8 @@ namespace cts { namespace core
 	}
 
 
-	AbstractVehicle::AccelerationDistance AbstractVehicle::thinkOfVehiclesInFront(const Routing& routing, double arcPos, double lookaheadDistance) const
+	AbstractVehicle::AccelerationDistance AbstractVehicle::thinkOfVehiclesInFront(double lookaheadDistance) const
 	{
-
 		// Find the next vehicle in front of me
 		// TODO: The original code also considers parallel connections if we're currently at the very beginning of our 
 		// current connection. However, I would assume that this should also be covered by the intersection handling code.
@@ -302,7 +301,7 @@ namespace cts { namespace core
 	}
 
 
-	AbstractVehicle::AccelerationDistance AbstractVehicle::thinkOfIntersection(const Routing& routing, double arcPos, double stopPoint) const
+	AbstractVehicle::AccelerationDistance AbstractVehicle::thinkOfIntersection(double stopPoint) const
 	{
 		const double s0 = getDesiredDistance(0, 0);
 		for (auto it = m_registeredIntersections.begin(); it != m_registeredIntersections.end(); ++it)

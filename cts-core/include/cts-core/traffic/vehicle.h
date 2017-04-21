@@ -43,7 +43,7 @@ namespace cts { namespace core
 		void prepare(double currentTime);
 
 		void think();
-		double think(const Routing& routing, double arcPos) const;
+		double think(const Routing& routing) const;
 
 		void move(double tickLength);
 
@@ -91,9 +91,9 @@ namespace cts { namespace core
 			double distance;
 		};
 
-		AccelerationDistance thinkOfVehiclesInFront(const Routing& routing, double arcPos, double lookaheadDistance) const;
+		AccelerationDistance thinkOfVehiclesInFront(double lookaheadDistance) const;
 
-		AccelerationDistance thinkOfIntersection(const Routing& routing, double arcPos, double lookaheadDistance) const;
+		AccelerationDistance thinkOfIntersection(double lookaheadDistance) const;
 
 		/// Computes the new routing for this vehicle and updates all internal (e.g. registered intersections) data accordingly.
 		/// \param  startNode			Start node

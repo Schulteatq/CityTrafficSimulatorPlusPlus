@@ -12,7 +12,7 @@ namespace cts { namespace core
 	}
 
 
-	SignalReceiver::SignalReceiver(const SignalReceiver& other) 
+	SignalReceiver::SignalReceiver(const SignalReceiver& /*other*/) 
 		: m_isDeleting(false)
 	{
 	}

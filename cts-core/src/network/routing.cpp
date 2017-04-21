@@ -67,7 +67,7 @@ namespace cts { namespace core
 	}
 
 
-	void Routing::compute(const Node& startNode, const std::vector<Node*>& destinationNodes, const AbstractVehicle& vehicle)
+	void Routing::compute(const Node& startNode, const std::vector<Node*>& destinationNodes, const AbstractVehicle& /*vehicle*/)
 	{
 		m_segments.clear();
 

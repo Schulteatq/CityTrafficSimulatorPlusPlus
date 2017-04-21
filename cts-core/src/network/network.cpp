@@ -133,7 +133,6 @@ namespace cts { namespace core
 				auto volume = m_trafficMgr.addVolume(startMap.find(startHash)->second.getNodes(), destinationMap.find(destinationHash)->second.getNodes());
 				volume->carsPerHour = numCars;
 			}
-			int i = 0;
 		}
 	}
 

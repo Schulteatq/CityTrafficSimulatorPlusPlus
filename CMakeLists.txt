@@ -5,14 +5,10 @@ include("cmake/commonconf.cmake")
 if(WIN32)
   # Disable warnings for Microsoft compiler:
   # C4251  class needs to have dll interface (used for std classes)
-  # C4290: C++ exception specification ignored except to indicate a function is
-  #        not __declspec(nothrow)
-  # C4390: ';' : empty controlled statement found; is this the intent?
-  #        occurs when OpenGL error logging macros are disabled
   # C4503: The decorated name was longer than the compiler limit (4096), and was truncated.
   #        Happens with some Eigen includes.
   # C4068: Unknown Pragma since we use some GCC pragmas in the code.
-  LIST(APPEND CtsGlobalDefinitions /wd4251 /wd4290 /wd4390 /wd4503 /wd4068)
+  LIST(APPEND CtsGlobalDefinitions /wd4251 /wd4503 /wd4068 /W4)
 
   # enable parallel builds in Visual Studio
   LIST(APPEND CtsGlobalDefinitions "/MP" "-D_CRT_SECURE_NO_DEPRECATE")

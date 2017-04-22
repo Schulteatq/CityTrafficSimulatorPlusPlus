@@ -1,4 +1,4 @@
-#include <gui/networkrenderwidget.h>
+#include <cts-gui/networkrenderwidget.h>
 
 #include <cts-core/base/algorithmicgeometry.h>
 #include <cts-core/base/bounds.h>
@@ -70,6 +70,12 @@ namespace cts { namespace gui
 		{
 			m_simulation = nullptr;
 		}
+	}
+
+
+	core::Simulation& NetworkRenderWidget::getSimulation()
+	{
+		return *m_simulation;
 	}
 
 
@@ -369,15 +375,15 @@ namespace cts { namespace gui
 
 		// draw connections
 		QBrush connectionBrush(Qt::gray);
-		for (auto& connection : m_network->getConnections())
+		for (core::Connection& connection : m_network->getConnections())
 		{
-			QPainterPath path(QPointF(connection->getCurve().getSupportPoints()[0].x(), connection->getCurve().getSupportPoints()[0].y()));
+			QPainterPath path(QPointF(connection.getCurve().getSupportPoints()[0].x(), connection.getCurve().getSupportPoints()[0].y()));
 			path.cubicTo(
-				connection->getCurve().getSupportPoints()[1].x(), connection->getCurve().getSupportPoints()[1].y(),
-				connection->getCurve().getSupportPoints()[2].x(), connection->getCurve().getSupportPoints()[2].y(),
-				connection->getCurve().getSupportPoints()[3].x(), connection->getCurve().getSupportPoints()[3].y()
+				connection.getCurve().getSupportPoints()[1].x(), connection.getCurve().getSupportPoints()[1].y(),
+				connection.getCurve().getSupportPoints()[2].x(), connection.getCurve().getSupportPoints()[2].y(),
+				connection.getCurve().getSupportPoints()[3].x(), connection.getCurve().getSupportPoints()[3].y()
 				);
-			p.setPen(QPen(connectionBrush, connection->getPriority()));
+			p.setPen(QPen(connectionBrush, connection.getPriority()));
 			p.drawPath(path);
 		}
 

@@ -6,7 +6,7 @@
 MACRO(DEFINE_SOURCE_GROUPS_FROM_SUBDIR Files BasePath RemovePathPrefixes)
     FOREACH(f ${${Files}})
         SET(f_cat "")
-        
+
         # extract relative file path
         IF(IS_ABSOLUTE ${f})
             FILE(RELATIVE_PATH f_rel ${BasePath} ${f})
@@ -14,7 +14,7 @@ MACRO(DEFINE_SOURCE_GROUPS_FROM_SUBDIR Files BasePath RemovePathPrefixes)
         ELSE()
             GET_FILENAME_COMPONENT(f_rel ${f} PATH)
         ENDIF()
-        
+
         # create source group specifier from rel path
         IF(f_rel)
             # remove ../
@@ -25,20 +25,20 @@ MACRO(DEFINE_SOURCE_GROUPS_FROM_SUBDIR Files BasePath RemovePathPrefixes)
                     string(REGEX REPLACE "${prefix}" "" f_cat ${f_cat})
                 ENDIF()
             ENDFOREACH()
-			
-            # convert path separators into source group separators: 
+
+            # convert path separators into source group separators:
             # path/to/my => path\\to\\my
             IF(f_cat)
                 string(REGEX REPLACE "\\\\|/" "\\\\\\\\" f_cat ${f_cat})
             ENDIF()
         ENDIF()
-        
+
         # set extracted source group
         IF(f_cat)
             SOURCE_GROUP("${f_cat}" FILES ${f})
         ELSE()
             SOURCE_GROUP("" FILES ${f})
         ENDIF()
-        
+
     ENDFOREACH()
 ENDMACRO(DEFINE_SOURCE_GROUPS_FROM_SUBDIR)

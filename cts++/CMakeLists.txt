@@ -1,24 +1,26 @@
-file(GLOB CtsApplicationSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    src/*.cpp
-    src/gui/*.cpp
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+file(GLOB_RECURSE CtsApplicationSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+  src/*.cpp
 )
 
-file(GLOB CtsApplicationHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    src/*.h
-    src/gui/*.h
+file(GLOB_RECURSE CtsApplicationHeaders RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+  src/*.h
 )
 
 
 # Define an executable
 add_executable(CityTrafficSimulator++ ${CtsApplicationHeaders} ${CtsApplicationSources})
-include_directories(src)
-include_directories(${CtsGlobalIncludeDirs})
+target_include_directories(CityTrafficSimulator++
+  PRIVATE src
+)
 
 # Define the libraries this project depends upon
-target_link_libraries(CityTrafficSimulator++ cts-core Qt5::Widgets)
+target_link_libraries(CityTrafficSimulator++ PRIVATE cts-core cts-gui Qt5::Widgets)
 
 if(ENABLE_SCRIPTING)
-  target_link_libraries(CityTrafficSimulator++ cts-lua)
+  target_link_libraries(CityTrafficSimulator++ PRIVATE cts-lua)
 endif()
 
 DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsApplicationSources ${CtsHome}/cts++ "src")

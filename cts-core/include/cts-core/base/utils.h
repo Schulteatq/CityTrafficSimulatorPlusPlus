@@ -2,7 +2,9 @@
 #define CTS_CORE_UTILS_H__
 
 #include <algorithm>
+#include <memory>
 #include <numeric>
+#include <vector>
 
 namespace cts
 {
@@ -58,6 +60,19 @@ namespace cts
 		inline T reduce(const Container& container, T init, BinaryOperation&& op)
 		{
 			return std::accumulate(container.begin(), container.end(), init, op);
+		}
+
+
+		/// Converts a vector of unique_ptrs to a vector of reference_wrappers.
+		/// Inspired by https://jonasdevlieghere.com/containers-of-unique-pointers/
+		template<typename T>
+		std::vector< std::reference_wrapper<T> > to_refs(const std::vector< std::unique_ptr<T> >& container)
+		{
+			std::vector< std::reference_wrapper<T> > refs;
+			refs.reserve(container.size());
+			std::transform(container.begin(), container.end(), std::back_inserter(refs),
+				[](auto &x) { return std::ref(*x); });
+			return refs;
 		}
 	}
 }

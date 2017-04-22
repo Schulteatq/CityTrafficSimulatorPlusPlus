@@ -2,6 +2,7 @@
 #include <cts-core/network/network.h>
 #include <cts-core/simulation/simulation.h>
 #include <cts-gui/networkrenderwidget.h>
+#include <cts-gui/scripting/luatablewidget.h>
 #include <cts-gui/scripting/scriptingwidget.h>
 
 #include <cts-lua/cts-lua.h>
@@ -44,6 +45,30 @@ int main(int argc, char** argv)
 	cts::lua::Registration::registerWith(lua);
 	auto sw = new cts::gui::ScriptingWidget(lua);
 	sw->show();
+
+
+	lua.script("config = {"
+		"	fullscreen = false,"
+		"	resolution = { x = 1024, y = 768 }"
+		"}");
+
+	bool isfullscreen = lua["config"]["fullscreen"]; // can get nested variables
+
+	sol::table config = lua["config"];
+	for (auto& it : config)
+	{
+		auto a1 = it.first.get_type();
+		auto a2 = it.first.as<std::string>();
+		auto b1 = it.second.get_type();
+		auto b2 = it.second.as<std::string>();
+
+		int i = 0;
+	}
+
+
+	cts::gui::LuaTableTreeWidget lttw;
+	lttw.update(lua, cts::gui::LuaTreeItem::FULL_MODEL);
+	lttw.show();
 
 	return app.exec();
 }

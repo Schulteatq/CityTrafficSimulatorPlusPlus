@@ -41,7 +41,7 @@ target_compile_features(cts-core
     PRIVATE cxx_variadic_templates)
 
 # Depend on a library that we defined in the top-level file
-target_link_libraries(cts-core tinyxml2)
+target_link_libraries(cts-core PRIVATE tinyxml2)
 
 
 DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsCoreSources ${CtsHome}/cts-core "src")

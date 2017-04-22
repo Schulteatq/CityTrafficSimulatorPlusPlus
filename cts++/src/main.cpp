@@ -1,15 +1,17 @@
 #include <cts-core/base/log.h>
 #include <cts-core/network/network.h>
 #include <cts-core/simulation/simulation.h>
+#include <gui/scriptingwidget.h>
 
 #include <cts-gui/mainwindow.h>
 #include <cts-gui/networkrenderwidget.h>
 
+#include <cts-lua/cts-lua.h>
+
 #include <QtWidgets/QApplication>
 
-#include <iostream>
-#include <iomanip>
-#include <cassert>
+#include <lua.hpp>
+#include <sol.hpp>
 
 int main(int argc, char** argv)
 {
@@ -30,6 +32,11 @@ int main(int argc, char** argv)
 	mw.getNetworkRenderWidget()->setSimulation(&simulation);
 	mw.show();
 	mw.showMaximized();
+
+	sol::state lua;
+	lua.open_libraries(sol::lib::base);
+	auto sw = new cts::gui::ScriptingWidget(lua);
+	sw->show();
 
 	return app.exec();
 }

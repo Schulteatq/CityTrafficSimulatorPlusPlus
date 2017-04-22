@@ -13,7 +13,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
-set_target_properties (tinyxml2 PROPERTIES DEFINE_SYMBOL "TINYXML2_EXPORT")
+set_target_properties(tinyxml2 PROPERTIES DEFINE_SYMBOL "TINYXML2_EXPORT")
+set_target_properties(tinyxml2 PROPERTIES FOLDER "Externals")
 
 # Define headers for this library. PUBLIC headers are used for
 # compiling the library, and will be added to consumers' build

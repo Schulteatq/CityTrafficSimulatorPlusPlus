@@ -69,3 +69,5 @@ set_target_properties(liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1)
 if ( LUA_BUILD_AS_DLL )
   target_compile_definitions(liblua PRIVATE LUA_BUILD_AS_DLL)
 endif ()
+
+set_target_properties(liblua PROPERTIES FOLDER "Externals")

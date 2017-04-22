@@ -1,5 +1,5 @@
 
-#include "scriptingwidget.h"
+#include <cts-gui/scripting/scriptingwidget.h>
 
 #include <QKeyEvent>
 

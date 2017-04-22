@@ -85,6 +85,12 @@ namespace cts { namespace gui
 	}
 
 
+	core::Simulation& NetworkRenderWidget::getSimulation()
+	{
+		return *m_simulation;
+	}
+
+
 	vec2 NetworkRenderWidget::windowToWorld(const QPoint& pt) const
 	{
 		vec2 toReturn(pt.x(), pt.y());
@@ -381,15 +387,15 @@ namespace cts { namespace gui
 
 		// draw connections
 		QBrush connectionBrush(Qt::gray);
-		for (auto& connection : m_network->getConnections())
+		for (core::Connection& connection : m_network->getConnections())
 		{
-			QPainterPath path(QPointF(connection->getCurve().getSupportPoints()[0].x(), connection->getCurve().getSupportPoints()[0].y()));
+			QPainterPath path(QPointF(connection.getCurve().getSupportPoints()[0].x(), connection.getCurve().getSupportPoints()[0].y()));
 			path.cubicTo(
-				connection->getCurve().getSupportPoints()[1].x(), connection->getCurve().getSupportPoints()[1].y(),
-				connection->getCurve().getSupportPoints()[2].x(), connection->getCurve().getSupportPoints()[2].y(),
-				connection->getCurve().getSupportPoints()[3].x(), connection->getCurve().getSupportPoints()[3].y()
+				connection.getCurve().getSupportPoints()[1].x(), connection.getCurve().getSupportPoints()[1].y(),
+				connection.getCurve().getSupportPoints()[2].x(), connection.getCurve().getSupportPoints()[2].y(),
+				connection.getCurve().getSupportPoints()[3].x(), connection.getCurve().getSupportPoints()[3].y()
 				);
-			p.setPen(QPen(connectionBrush, connection->getPriority()));
+			p.setPen(QPen(connectionBrush, connection.getPriority()));
 			p.drawPath(path);
 		}
 

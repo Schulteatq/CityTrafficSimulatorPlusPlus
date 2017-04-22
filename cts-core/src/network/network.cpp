@@ -203,9 +203,9 @@ namespace cts { namespace core
 		return toReturn;
 	}
 
-	const Network::ConnectionListType& Network::getConnections() const
+	std::vector< std::reference_wrapper<Connection> > Network::getConnections() const
 	{
-		return m_connections;
+		return utils::to_refs(m_connections);
 	}
 
 

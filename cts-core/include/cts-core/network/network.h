@@ -49,7 +49,7 @@ namespace cts { namespace core
 		const NodeListType& getNodes() const;
 		std::vector<Node*> getNodes(const Bounds2& bounds) const;
 		
-		const ConnectionListType& getConnections() const;
+		std::vector< std::reference_wrapper<Connection> > getConnections() const;
 		const VehicleListType& getVehicles() const;
 		const IntersectionListType& getIntersections() const;
 

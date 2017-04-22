@@ -3,6 +3,7 @@
 
 #include <cts-core/base/log.h>
 #include <cts-core/base/signal.h>
+#include <cts-gui/config.h>
 
 #include <deque>
 
@@ -21,7 +22,7 @@
 namespace cts { namespace gui
 {
 	/// Qt widget providing a console-like interface to the Lua VM of CampvisApplication.
-	class ScriptingWidget : public QWidget {
+	class CTS_GUI_API ScriptingWidget : public QWidget {
 		Q_OBJECT;
 
 	public:

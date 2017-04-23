@@ -1,9 +1,48 @@
 #include <cts-gui/scripting/luatablewidget.h>
 
-#include <QHeaderView>
-#include <QStringList>
-
 #include <cassert>
+
+extern "C" {
+#include "lapi.h"
+#include "lobject.h"
+}
+
+namespace
+{
+	StkId index2addr(lua_State *L, int idx) {
+		CallInfo *ci = L->ci;
+		if (idx > 0) {
+			TValue *o = ci->func + idx;
+			api_check(L, idx <= ci->top - (ci->func + 1), "unacceptable index");
+			if (o >= L->top) return 0;
+			else return o;
+		}
+		else if (!(idx <= LUA_REGISTRYINDEX)) {  /* negative index */
+			api_check(L, idx != 0 && -idx <= L->top - (ci->func + 1), "invalid index");
+			return L->top + idx;
+		}
+		else if (idx == LUA_REGISTRYINDEX)
+			return &G(L)->l_registry;
+		else {  /* upvalues */
+			idx = LUA_REGISTRYINDEX - idx;
+			api_check(L, idx <= MAXUPVAL + 1, "upvalue index too large");
+			if (ttislcf(ci->func))  /* light C function? */
+				return 0;  /* it has no upvalues */
+			else {
+				CClosure *func = clCvalue(ci->func);
+				return (idx <= func->nupvalues) ? &func->upvalue[idx - 1] : 0;
+			}
+		}
+	}
+
+	void* getTablePtr(sol::table& table)
+	{
+		int numElemsPushed = table.push();
+		void* toReturn = hvalue(index2addr(table.lua_state(), -1));
+		lua_pop(table.lua_state(), numElemsPushed);
+		return toReturn;
+	}
+}
 
 namespace cts { namespace gui {
 
@@ -100,26 +139,45 @@ namespace cts { namespace gui {
 		: LuaTreeItem(modelStyle, name, type, parent)
 		, _thisTable(thisTable)
 		, _isMetatable(isMetatable)
+		, _dataPtr(getTablePtr(thisTable))
 	{
 		// create a new metatable
 		if (_thisTable[sol::metatable_key].valid())
 			new LuaTreeItemTable(_modelStyle, true, _thisTable[sol::metatable_key], name, sol::type::table, this);
 
 		// fill the table with values depending on model style
-		if (_modelStyle == FULL_MODEL) {
-			for (auto it : thisTable)
-			{
-				std::string itemName = it.first.as<std::string>();
-				sol::type luaType = it.second.get_type();
+		if (_modelStyle == FULL_MODEL)
+		{
+			_thisTable.for_each([this](sol::object key, sol::object value) {
+				std::string itemName = key.as<std::string>();
+				sol::type luaType = value.get_type();
 
-				if (itemName == "_G" || itemName == _name)
-					continue;
+				if (itemName == "_G")
+					return;
 
-				if (luaType == sol::type::table) 
-					new LuaTreeItemTable(_modelStyle, false, thisTable[itemName], itemName, luaType, this);
-				else 
-					new LuaTreeItemLeaf(_modelStyle, thisTable, itemName, luaType, this);
-			}
+				if (luaType == sol::type::table)
+				{
+					sol::table thatTable = _thisTable[itemName];
+					void* thatRawPtr = getTablePtr(thatTable);
+
+					// detect cyclic table references
+					LuaTreeItemTable* pTable = this;
+					while (pTable = dynamic_cast<LuaTreeItemTable*>(pTable->_parent))
+					{
+						if (pTable->_dataPtr == thatRawPtr)
+						{
+							new LuaTreeItemLeaf(_modelStyle, _thisTable, "\xF0\x9F\x94\x97 " + itemName, luaType, this);
+							return;
+						}
+					}
+
+					new LuaTreeItemTable(_modelStyle, false, _thisTable[itemName], itemName, luaType, this);
+				}
+				else
+				{
+					new LuaTreeItemLeaf(_modelStyle, _thisTable, itemName, luaType, this);
+				}
+			});
 		}
 		else if (_modelStyle == COMPLETER_MODEL) {
 			//auto& valueMap = thisTable->getValueMap();
@@ -316,6 +374,8 @@ namespace cts { namespace gui {
 
 	LuaTableTreeWidget::LuaTableTreeWidget(QWidget* parent /*= 0*/)
 		: QTreeView(parent)
+		, _treeModel(nullptr)
+		, _sortModel(nullptr)
 	{
 		setupWidget();
 	}
@@ -330,6 +390,7 @@ namespace cts { namespace gui {
 
 		// set new data
 		_treeModel->setData(&luaVmState, modelStyle);
+		_sortModel->sort(0);
 		expandToDepth(0);
 
 		// adjust view
@@ -340,9 +401,14 @@ namespace cts { namespace gui {
 
 	void LuaTableTreeWidget::setupWidget() {
 		_treeModel = new LuaTableTreeModel(this);
-		assert(_treeModel != nullptr);
 
-		setModel(_treeModel);
+		_sortModel = new QSortFilterProxyModel(this);
+		_sortModel->setSortCaseSensitivity(Qt::CaseInsensitive);
+		_sortModel->setSortLocaleAware(true);
+		_sortModel->setSourceModel(_treeModel);
+
+		setModel(_sortModel);
+		setSortingEnabled(true);
 	}
 
 	LuaTableTreeModel* LuaTableTreeWidget::getTreeModel() {

@@ -6,10 +6,11 @@
 
 #include <sol.hpp>
 
-#include <QAbstractItemModel>
-#include <QTreeWidget>
-#include <QList>
-#include <QVariant>
+#include <QtCore/QAbstractItemModel>
+#include <QtCore/QList>
+#include <QtCore/QSortFilterProxyModel>
+#include <QtCore/QVariant>
+#include <QtWidgets/QTreeWidget>
 
 #include <map>
 #include <memory>
@@ -96,6 +97,7 @@ namespace cts { namespace gui {
 
 		sol::table _thisTable;		///< this item's LuaTable
 		bool _isMetatable;			///< Flag whether this item represents a Metatable (currently only used for printing purposes)
+		void* _dataPtr;
 	};
 
 // = TreeModel ====================================================================================
@@ -177,7 +179,8 @@ namespace cts { namespace gui {
 		 */
 		void setupWidget();
 
-		LuaTableTreeModel* _treeModel;     ///< Data model for the TreeView.
+		LuaTableTreeModel* _treeModel;		///< Data model for the TreeView.
+		QSortFilterProxyModel* _sortModel;	///< sorting proxy model
 
 	};
 }

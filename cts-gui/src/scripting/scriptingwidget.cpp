@@ -21,7 +21,6 @@ namespace cts { namespace gui
 		m_scriptingWidgets.push_back(this);
 		
 		m_luaState.set_function("print", &ScriptingWidget::lua_print_callback);
-		m_luaState.set_function("debug", &ScriptingWidget::lua_debug_callback);
 		connect(this, &ScriptingWidget::newMessage, this, &ScriptingWidget::appendMessage);
 	}
 
@@ -50,7 +49,7 @@ namespace cts { namespace gui
 		monoFont.setPointSize(QFont().pointSize() + 1);
 
 		m_consoleDisplay->document()->setDefaultFont(monoFont);
-		m_editCommand = new QLineEdit(this);
+		m_editCommand = new CompletingLuaLineEdit(m_luaState, this);
 		m_editCommand->setPlaceholderText(tr("Enter Lua commands here..."));
 		m_editCommand->installEventFilter(this);
 		controlsLayout->addWidget(m_editCommand);

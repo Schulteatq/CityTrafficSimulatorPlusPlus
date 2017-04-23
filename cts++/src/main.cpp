@@ -41,6 +41,8 @@ int main(int argc, char** argv)
 	lua.script_file("inspect.lua");
 	lua["n"] = &network;
 	lua["s"] = &renderWidget.getSimulation();
+	cts::core::Node aNode(cts::vec2(2, 4));
+	lua["aNode"] = &aNode;
 
 	cts::lua::Registration::registerWith(lua);
 	auto sw = new cts::gui::ScriptingWidget(lua);
@@ -52,22 +54,9 @@ int main(int argc, char** argv)
 		"	resolution = { x = 1024, y = 768 }"
 		"}");
 
-	bool isfullscreen = lua["config"]["fullscreen"]; // can get nested variables
-
-	sol::table config = lua["config"];
-	for (auto& it : config)
-	{
-		auto a1 = it.first.get_type();
-		auto a2 = it.first.as<std::string>();
-		auto b1 = it.second.get_type();
-		auto b2 = it.second.as<std::string>();
-
-		int i = 0;
-	}
-
 
 	cts::gui::LuaTableTreeWidget lttw;
-	lttw.update(lua, cts::gui::LuaTreeItem::FullModel);
+	lttw.update(lua, cts::gui::LuaTreeItem::CompleterModel);
 	lttw.show();
 
 	return app.exec();

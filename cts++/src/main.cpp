@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 
 
 	cts::gui::LuaTableTreeWidget lttw;
-	lttw.update(lua, cts::gui::LuaTreeItem::FULL_MODEL);
+	lttw.update(lua, cts::gui::LuaTreeItem::FullModel);
 	lttw.show();
 
 	return app.exec();

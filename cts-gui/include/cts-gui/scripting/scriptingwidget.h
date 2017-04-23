@@ -4,6 +4,7 @@
 #include <cts-core/base/log.h>
 #include <cts-core/base/signal.h>
 #include <cts-gui/config.h>
+#include <cts-gui/scripting/completinglualineedit.h>
 
 #include <deque>
 
@@ -58,14 +59,14 @@ namespace cts { namespace gui
 		void newMessage(QString message);
 
 	private:
-		sol::state& m_luaState;			///< The Lua state to use
-		QTextEdit* m_consoleDisplay;	///< Text edit to hold the console output
-		QLineEdit* m_editCommand;		///< Text field to enter Lua commands
-		QPushButton* m_btnExecute;		///< Button to execute command
-		QPushButton* m_btnClear;		///< Button to clear the console output
+		sol::state& m_luaState;					///< The Lua state to use
+		QTextEdit* m_consoleDisplay;			///< Text edit to hold the console output
+		CompletingLuaLineEdit* m_editCommand;	///< Text field to enter Lua commands
+		QPushButton* m_btnExecute;				///< Button to execute command
+		QPushButton* m_btnClear;				///< Button to clear the console output
 
-		std::deque<QString> m_history;	///< History of executed commands
-		int m_currentPosition;			///< Current position in command history
+		std::deque<QString> m_history;			///< History of executed commands
+		int m_currentPosition;					///< Current position in command history
 
 		static std::vector<ScriptingWidget*> m_scriptingWidgets;
 	};

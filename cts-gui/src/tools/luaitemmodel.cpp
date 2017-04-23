@@ -1,4 +1,4 @@
-#include <cts-gui/tools/luaitemmodel.h>
+﻿#include <cts-gui/tools/luaitemmodel.h>
 
 #include <cassert>
 
@@ -138,6 +138,10 @@ namespace cts { namespace gui {
 		{
 			return "<userdata>";
 		}
+		else if (m_type == sol::type::lightuserdata)
+		{
+			return "<light userdata>";
+		}
 		return "";
 	}
 
@@ -151,13 +155,13 @@ namespace cts { namespace gui {
 		, m_isMetatable(isMetatable)
 		, m_tablePtr(getTablePtr(thisTable))
 	{
-		// create a new metatable
-		if (m_thisTable[sol::metatable_key].valid())
-			new LuaTreeItemTable(m_modelStyle, true, m_thisTable[sol::metatable_key], name, sol::type::table, this);
-
 		// fill the table with values depending on model style
-		if (m_modelStyle == FullModel)
+		if (!m_isMetatable || m_modelStyle == FullModel)
 		{
+			// create a new metatable
+			if (m_thisTable[sol::metatable_key].valid())
+				new LuaTreeItemTable(m_modelStyle, true, m_thisTable[sol::metatable_key], name, sol::type::table, this);
+
 			m_thisTable.for_each([this](sol::object key, sol::object value) {
 				std::string itemName = key.as<std::string>();
 				sol::type luaType = value.get_type();
@@ -189,36 +193,26 @@ namespace cts { namespace gui {
 				}
 			});
 		}
-		else if (m_modelStyle == CompleterModel)
+		else if (m_isMetatable && m_modelStyle == CompleterModel)
 		{
-			//auto& valueMap = thisTable->getValueMap();
-			//if (! _isMetatable) {
-			//	// for regular tables, just explore the whole table
-			//	for (auto it = valueMap.cbegin(); it != valueMap.cend(); ++it) {
-			//		const std::string& itemName = it->first;
-			//		int luaType = it->second.luaType;
-			//
-			//		if (itemName == "_G")
-			//			continue;
-			//
-			//		if (luaType == LUA_TTABLE) 
-			//			new LuaTreeItemTable(_modelStyle, false, thisTable->getTable(itemName), itemName, luaType, this);
-			//		else 
-			//			new LuaTreeItemLeaf(_modelStyle, thisTable, itemName, luaType, this);
-			//	}
-			//}
-			//else {
-			//	// for metatables, just gather all instance methods
-			//	auto fnTable = thisTable->getTable(".fn");
-			//	if (fnTable) {
-			//		recursiveGatherSwigMethods(thisTable, this);
-			//	}
-			//
-			//	auto instanceTable = thisTable->getTable(".instance");
-			//	if (instanceTable) {
-			//		recursiveGatherSwigMethods(instanceTable, this);
-			//	}
-			//}
+			// It would be really cool if we could access the original sol::usertype_metatable_core object at this point.
+			// It exists somewhere in the Lua registry, but unfortunately I could not receive it yet. Thus, we use this
+			// simple way of parsing the available functions.
+			m_thisTable.for_each([this](sol::object key, sol::object value) {
+				std::string itemName = key.as<std::string>();
+				sol::type luaType = value.get_type();
+
+				if (luaType == sol::type::function)
+				{
+					if ((itemName.compare(0, 2, "__") != 0) && (itemName.compare(0, 4, "\xF0\x9F\x8C\xB2") != 0))
+						new LuaTreeItemLeaf(m_modelStyle, m_thisTable, itemName, luaType, this);
+				}
+			});
+		}
+		else
+		{
+			// should not reach this
+			assert(false);
 		}
 	}
 
@@ -396,6 +390,12 @@ namespace cts { namespace gui {
 
 		if (luaVmState)
 			new LuaTreeItemTable(modelStyle, false, luaVmState->globals(), "[Global Variables]", sol::type::table, m_rootItem);
+		
+		sol::userdata mt = luaVmState->globals()["sol.cts::core::Network.\xE2\x99\xBB"];
+		bool v = mt.valid();
+		void* ptr = mt.as<void*>();
+		//auto t = typeid(*ptr).name();
+		sol::usertype_metatable_core* umc = static_cast<sol::usertype_metatable_core*>(ptr);
 
 		endResetModel();
 	}

@@ -14,8 +14,7 @@ namespace cts
 			, sol::constructors<core::Node(vec2)>()
 
 			// functions
-			, "getPosition", &core::Node::getPosition
-			, "setPosition", &core::Node::setPosition
+			, "position", sol::property(&core::Node::getPosition, &core::Node::setPosition)
 			, "getInSlope", &core::Node::getInSlope
 			, "setInSlope", &core::Node::setInSlope
 			, "getOutSlope", &core::Node::getOutSlope

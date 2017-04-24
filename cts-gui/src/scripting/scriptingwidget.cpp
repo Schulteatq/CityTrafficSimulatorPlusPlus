@@ -94,6 +94,9 @@ namespace cts { namespace gui
 		m_history.push_front(command);
 		m_currentPosition = -1;
 		m_editCommand->clear();
+
+		m_editCommand->completer()->update();
+		emit commandExecuted();
 	}
 
 

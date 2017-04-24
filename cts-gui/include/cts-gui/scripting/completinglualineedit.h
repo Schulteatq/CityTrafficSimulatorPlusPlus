@@ -8,8 +8,11 @@
 #include <QtWidgets/QLineEdit>
 
 namespace cts { namespace gui {
+	class LuaItemModel;
 
 	class LuaCompleter : public QCompleter {
+		Q_OBJECT;
+
 	public:
 		LuaCompleter(sol::state& luaVmState, QWidget* parent);
 
@@ -17,8 +20,12 @@ namespace cts { namespace gui {
 
 		virtual QStringList splitPath(const QString& path) const override;
 
+	public slots:
+		void update();
+
 	private:
 		sol::state& _luaVmState;
+		LuaItemModel* m_model;
 	};
 
 

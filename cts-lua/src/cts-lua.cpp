@@ -9,7 +9,9 @@ namespace cts
 
 	void lua::Registration::registerWith(sol::state& luaState)
 	{
-		luaState.new_usertype<core::Node>("Node"
+		sol::table ctsNamespace = luaState.create_table("cts");
+
+		ctsNamespace.new_simple_usertype<core::Node>("Node"
 			// ctors
 			, sol::constructors<core::Node(vec2)>()
 
@@ -22,7 +24,7 @@ namespace cts
 		);
 
 		
-		luaState.new_usertype<core::Network>("Network"
+		ctsNamespace.new_usertype<core::Network>("Network"
 			// ctors
 			, sol::constructors<core::Network()>()
 
@@ -32,7 +34,7 @@ namespace cts
 		);
 
 
-		luaState.new_usertype<core::Simulation>("Simulation"
+		ctsNamespace.new_usertype<core::Simulation>("Simulation"
 			// ctors
 			//, sol::constructors<core::Simulation(core::Network&)>()
 

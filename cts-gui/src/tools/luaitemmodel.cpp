@@ -195,6 +195,15 @@ namespace cts { namespace gui {
 		}
 		else if (m_isMetatable && m_modelStyle == CompleterModel)
 		{
+			//sol::function indexFun = m_thisTable["__index"];
+			//if (indexFun.valid())
+			//{
+			//	auto L = m_thisTable.lua_state();
+			//	int n = indexFun.push();
+			//	sol::usertype_metatable_core& umc = sol::stack::get<sol::light<sol::usertype_metatable_core>>(L, sol::upvalue_index(1));
+			//	indexFun.pop();
+			//}
+
 			// It would be really cool if we could access the original sol::usertype_metatable_core object at this point.
 			// It exists somewhere in the Lua registry, but unfortunately I could not receive it yet. Thus, we use this
 			// simple way of parsing the available functions.
@@ -391,9 +400,10 @@ namespace cts { namespace gui {
 		if (luaVmState)
 			new LuaTreeItemTable(modelStyle, false, luaVmState->globals(), "[Global Variables]", sol::type::table, m_rootItem);
 		
-		sol::userdata mt = luaVmState->globals()["sol.cts::core::Network.\xE2\x99\xBB"];
+		sol::object mt = luaVmState->registry()["sol.cts::core::Network.user"];
 		bool v = mt.valid();
-		void* ptr = mt.as<void*>();
+		auto t = mt.get_type();
+		auto ptr = mt.as< sol::light<sol::usertype_metatable_core> >();
 		//auto t = typeid(*ptr).name();
 		sol::usertype_metatable_core* umc = static_cast<sol::usertype_metatable_core*>(ptr);
 

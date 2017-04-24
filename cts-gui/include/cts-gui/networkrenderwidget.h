@@ -35,8 +35,10 @@ namespace gui
 		/// Sets the network to display to \e value.
 		void setNetwork(core::Network* value);
 
-
-		core::Simulation& getSimulation();
+		/// Returns the the Simulation object to use.
+		core::Simulation* getSimulation() const;
+		/// Sets the the Simulation object to use.
+		void setSimulation(core::Simulation* value);
 
 	signals:
 		void updateRequested();
@@ -80,7 +82,7 @@ namespace gui
 
 
 		core::Network* m_network;
-		std::unique_ptr<core::Simulation> m_simulation;
+		core::Simulation* m_simulation;
 
 		std::vector<core::Node*> m_selectedStartNodes;
 		std::vector<core::Node*> m_selectedEndNodes;

@@ -16,7 +16,7 @@ namespace cts { namespace gui {
 	public:
 		/// Creates a new LuaTableTreeWidget.
 		/// \param   parent  Parent widget
-		explicit LuaTableTreeWidget(QWidget* parent = 0);
+		explicit LuaTableTreeWidget(sol::state* luaState, LuaTreeItem::ModelStyle modelStyle, QWidget* parent = nullptr);
 
 		/// Default Destructor
 		virtual ~LuaTableTreeWidget() = default;
@@ -24,17 +24,21 @@ namespace cts { namespace gui {
 		/// Returns the data model for the TreeView.
 		LuaItemModel* getTreeModel();
 
+		/// Updates the data in the tree view using the given Lua state.
+		void setLuaState(sol::state* luaState, LuaTreeItem::ModelStyle modelStyle);
 
 	public slots:
-		/// Updates the data in the tree view using the given Lua state.
-		void update(sol::state& luaState, LuaTreeItem::ModelStyle modelStyle);
+		/// Reinitializes the LuaItemModel with the data from the Lua VM.
+		void update();
 
 	private:
 		/// Sets up the widget.
 		void setupWidget();
 
-		LuaItemModel* m_treeModel;		///< Data model for the TreeView.
-		QSortFilterProxyModel* m_sortModel;	///< sorting proxy model
+		sol::state* m_luaState;					///< Lua VM to use
+		LuaTreeItem::ModelStyle m_modelStyle;	///< Model style to use
+		LuaItemModel* m_treeModel;				///< Data model for the TreeView.
+		QSortFilterProxyModel* m_sortModel;		///< sorting proxy model
 
 	};
 }

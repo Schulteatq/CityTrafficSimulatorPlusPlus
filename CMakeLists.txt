@@ -14,6 +14,7 @@ add_subdirectory(cts-core)
 add_subdirectory(cts-gui)
 
 if(ENABLE_SCRIPTING)
+  add_subdirectory(ext/lua-5.3)
   add_subdirectory(cts-lua)
 endif()
 

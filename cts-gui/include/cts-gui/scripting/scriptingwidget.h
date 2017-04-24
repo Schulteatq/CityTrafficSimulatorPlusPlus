@@ -57,6 +57,7 @@ namespace cts { namespace gui
 
 	signals:
 		void newMessage(QString message);
+		void commandExecuted();
 
 	private:
 		sol::state& m_luaState;					///< The Lua state to use

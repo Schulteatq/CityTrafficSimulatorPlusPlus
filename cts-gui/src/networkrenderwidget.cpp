@@ -85,12 +85,6 @@ namespace cts { namespace gui
 	}
 
 
-	core::Simulation& NetworkRenderWidget::getSimulation()
-	{
-		return *m_simulation;
-	}
-
-
 	vec2 NetworkRenderWidget::windowToWorld(const QPoint& pt) const
 	{
 		vec2 toReturn(pt.x(), pt.y());

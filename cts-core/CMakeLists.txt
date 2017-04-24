@@ -18,6 +18,9 @@ set_target_properties(cts-core PROPERTIES DEFINE_SYMBOL "CTS_CORE_EXPORTS")
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(cts-core PRIVATE "-DCTS_CORE_BUILD_SHARED_LIBS")
 endif()
+if(ENABLE_SCRIPTING)
+  target_compile_definitions(cts-core PUBLIC "CTS_ENABLE_SCRIPTING")
+endif()
 
 target_include_directories(cts-core
   PUBLIC

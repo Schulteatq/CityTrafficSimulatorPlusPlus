@@ -40,8 +40,6 @@ namespace gui
 		/// Sets the the Simulation object to use.
 		void setSimulation(core::Simulation* value);
 
-		core::Simulation& getSimulation();
-
 	signals:
 		void updateRequested();
 

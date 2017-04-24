@@ -4,22 +4,33 @@
 
 namespace cts { namespace gui {
 
-	LuaTableTreeWidget::LuaTableTreeWidget(QWidget* parent /*= 0*/)
+	LuaTableTreeWidget::LuaTableTreeWidget(sol::state* luaState, LuaTreeItem::ModelStyle modelStyle, QWidget* parent /*= 0*/)
 		: QTreeView(parent)
+		, m_luaState(luaState)
+		, m_modelStyle(modelStyle)
 		, m_treeModel(nullptr)
 		, m_sortModel(nullptr)
 	{
 		setupWidget();
+		setLuaState(m_luaState, m_modelStyle);
 	}
 
 
-	void LuaTableTreeWidget::update(sol::state& luaVmState, LuaTreeItem::ModelStyle modelStyle)
+	void LuaTableTreeWidget::setLuaState(sol::state* luaState, LuaTreeItem::ModelStyle modelStyle)
+	{
+		m_luaState = luaState;
+		m_modelStyle = modelStyle;
+		update();
+	}
+
+
+	void LuaTableTreeWidget::update()
 	{
 		// clear selection before setting the new data or we will encounter random crashes...
 		selectionModel()->clear();
 
 		// set new data
-		m_treeModel->setData(&luaVmState, modelStyle);
+		m_treeModel->setData(m_luaState, m_modelStyle);
 		m_sortModel->sort(0);
 		expandToDepth(0);
 

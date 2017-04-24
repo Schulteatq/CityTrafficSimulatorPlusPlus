@@ -11,10 +11,11 @@ namespace cts {	namespace gui {
 	LuaCompleter::LuaCompleter(sol::state& luaVmState, QWidget* parent)
 		: QCompleter(parent)
 		, _luaVmState(luaVmState)
+		, m_model(nullptr)
 	{
-		auto luaItemModel = new LuaItemModel(this);
-		luaItemModel->setData(&_luaVmState, LuaTreeItem::CompleterModel);
-		setModel(luaItemModel);
+		m_model = new LuaItemModel(this);
+		m_model->setData(&_luaVmState, LuaTreeItem::CompleterModel);
+		setModel(m_model);
 	}
 
 
@@ -39,6 +40,12 @@ namespace cts {	namespace gui {
 		toReturn.push_back(path.right(path.length() - start));
 
 		return toReturn;
+	}
+
+
+	void LuaCompleter::update()
+	{
+		m_model->setData(&_luaVmState, LuaTreeItem::CompleterModel);
 	}
 
 

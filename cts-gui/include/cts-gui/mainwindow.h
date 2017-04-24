@@ -5,6 +5,11 @@
 
 #include <QtWidgets/QMainWindow>
 
+namespace sol
+{
+	class state;
+}
+
 namespace cts { namespace gui
 {
 	class LuaTableTreeWidget;
@@ -16,7 +21,7 @@ namespace cts { namespace gui
 		Q_OBJECT;
 
 	public:
-		MainWindow(QWidget* parent = nullptr);
+		MainWindow(sol::state* luaState = nullptr, QWidget* parent = nullptr);
 
 		NetworkRenderWidget* getNetworkRenderWidget();
 
@@ -24,6 +29,12 @@ namespace cts { namespace gui
 		void setupGUI();
 
 		NetworkRenderWidget* m_nrw;
+		sol::state* m_luaState;
+
+#ifdef CTS_ENABLE_SCRIPTING
+		LuaTableTreeWidget* m_lttw;
+		ScriptingWidget* m_sw;
+#endif // CTS_ENABLE_SCRIPTING
 	};
 
 }

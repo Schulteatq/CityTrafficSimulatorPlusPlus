@@ -42,6 +42,11 @@ namespace cts { namespace core
 		~TrafficManager();
 
 
+		/// Returns the multiplier for the global traffic volume.
+		double getGlobalTrafficMultiplier() const;
+		/// Sets the multiplier for the global traffic volume.
+		void setGlobalTrafficMultiplier(double value);
+
 		void clearVehicles();
 
 

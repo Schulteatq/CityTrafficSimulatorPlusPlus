@@ -2,6 +2,7 @@
 
 #include <cts-core/network/network.h>
 #include <cts-core/simulation/simulation.h>
+#include <cts-core/traffic/trafficmanager.h>
 
 
 namespace cts
@@ -31,6 +32,7 @@ namespace cts
 			// functions
 			, "importLegacyXml", &core::Network::importLegacyXml
 			, "getConnections", &core::Network::getConnections
+			, "getTrafficManager", &core::Network::getTrafficManager
 		);
 
 
@@ -50,6 +52,14 @@ namespace cts
 			, "stop", &core::Simulation::stop
 		);
 
+
+		ctsNamespace.new_usertype<core::TrafficManager>("TrafficManager"
+			// ctors
+			//, sol::constructors<core::TrafficManager()>()
+
+			// functions
+			, "globalTrafficMultiplier", sol::property(&core::TrafficManager::getGlobalTrafficMultiplier, &core::TrafficManager::setGlobalTrafficMultiplier)
+			);
 
 	}
 

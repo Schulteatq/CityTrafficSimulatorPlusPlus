@@ -13,6 +13,7 @@ add_subdirectory(ext/tinyxml2)
 add_subdirectory(cts-core)
 
 if(ENABLE_SCRIPTING)
+  add_subdirectory(ext/lua-5.3)
   add_subdirectory(cts-lua)
 endif()
 

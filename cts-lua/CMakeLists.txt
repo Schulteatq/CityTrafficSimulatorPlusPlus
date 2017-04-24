@@ -1,5 +1,3 @@
-add_subdirectory(ext/lua-5.3)
-
 # Define library. Only source files here!
 project(cts-lua LANGUAGES CXX)
 
@@ -17,8 +15,8 @@ target_include_directories(cts-lua
   PRIVATE
     ${CtsGlobalIncludeDirs}
   PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ext/sol2>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ext/lua-5.3/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ext/sol2>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ext/lua-5.3/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )

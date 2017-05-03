@@ -1,9 +1,15 @@
 #include <cts-core/base/log.h>
 #include <cts-core/network/network.h>
-#include <gui/networkrenderwidget.h>
+#include <cts-core/simulation/simulation.h>
+
+#include <cts-gui/mainwindow.h>
+#include <cts-gui/networkrenderwidget.h>
 
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QMainWindow>
+
+#include <iostream>
+#include <iomanip>
+#include <cassert>
 
 int main(int argc, char** argv)
 {
@@ -15,13 +21,13 @@ int main(int argc, char** argv)
 	//network.importLegacyXml("minimal.xml");
 	//network.importLegacyXml("network.xml");
 
-	QApplication app(argc, argv);
-	QMainWindow mw;
+	cts::core::Simulation simulation(network);
+	simulation.start(1000);
 
-	cts::gui::NetworkRenderWidget renderWidget(nullptr);
-	renderWidget.setNetwork(&network);
-	renderWidget.setMinimumSize(800, 600);
-	mw.setCentralWidget(&renderWidget);
+	QApplication app(argc, argv);
+	cts::gui::MainWindow mw;
+	mw.getNetworkRenderWidget()->setNetwork(&network);
+	mw.getNetworkRenderWidget()->setSimulation(&simulation);
 	mw.show();
 	mw.showMaximized();
 

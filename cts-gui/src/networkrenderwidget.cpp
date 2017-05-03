@@ -1,4 +1,4 @@
-#include <gui/networkrenderwidget.h>
+#include <cts-gui/networkrenderwidget.h>
 
 #include <cts-core/base/algorithmicgeometry.h>
 #include <cts-core/base/bounds.h>
@@ -33,6 +33,7 @@ namespace cts { namespace gui
 	NetworkRenderWidget::NetworkRenderWidget(QWidget* parent)
 		: QWidget(parent)
 		, m_network(nullptr)
+		, m_simulation(nullptr)
 		, m_routing(new core::Routing())
 		, m_zoomFactor(1.0)
 		, m_zoomOffset(0.0, 0.0)
@@ -60,15 +61,26 @@ namespace cts { namespace gui
 	void NetworkRenderWidget::setNetwork(core::Network* value)
 	{
 		m_network = value;
-		if (m_network)
+	}
+
+
+	core::Simulation* NetworkRenderWidget::getSimulation() const
+	{
+		return m_simulation;
+	}
+
+
+	void NetworkRenderWidget::setSimulation(core::Simulation* value)
+	{
+		if (m_simulation != value)
 		{
-			m_simulation = std::make_unique<core::Simulation>(*m_network);
-			m_simulation->s_stepped.connect(this, &NetworkRenderWidget::onSimulationStep);
-			m_simulation->start(1000);
-		}
-		else
-		{
-			m_simulation = nullptr;
+			if (m_simulation != nullptr)
+				m_simulation->s_stepped.disconnect(this);
+
+			m_simulation = value;
+
+			if (m_simulation != nullptr)
+				m_simulation->s_stepped.connect(this, &NetworkRenderWidget::onSimulationStep);
 		}
 	}
 

@@ -4,6 +4,7 @@
 #include <cts-core/coreapi.h>
 #include <cts-core/base/math.h>
 #include <cts-core/base/signal.h>
+#include <cts-gui/config.h>
 
 #include <memory>
 #include <vector>
@@ -21,7 +22,7 @@ namespace core
 namespace gui
 {
 
-	class NetworkRenderWidget : public QWidget, public core::SignalReceiver
+	class CTS_GUI_API NetworkRenderWidget : public QWidget, public core::SignalReceiver
 	{
 		Q_OBJECT;
 	public:
@@ -34,6 +35,10 @@ namespace gui
 		/// Sets the network to display to \e value.
 		void setNetwork(core::Network* value);
 
+		/// Returns the the Simulation object to use.
+		core::Simulation* getSimulation() const;
+		/// Sets the the Simulation object to use.
+		void setSimulation(core::Simulation* value);
 
 	signals:
 		void updateRequested();
@@ -77,7 +82,7 @@ namespace gui
 
 
 		core::Network* m_network;
-		std::unique_ptr<core::Simulation> m_simulation;
+		core::Simulation* m_simulation;
 
 		std::vector<core::Node*> m_selectedStartNodes;
 		std::vector<core::Node*> m_selectedEndNodes;

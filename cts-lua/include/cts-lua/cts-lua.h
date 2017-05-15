@@ -5,6 +5,7 @@
 #include <cts-core/base/math.h>
 
 #include <sol.hpp>
+#include <mutex>
 
 namespace sol {
 
@@ -24,7 +25,7 @@ namespace sol {
 		template <>
 		struct checker<cts::vec2> {
 			template <typename Handler>
-			CTS_LUA_API static bool check(lua_State* L, int index, Handler&& handler, record& tracking) {
+			static bool check(lua_State* L, int index, Handler&& handler, record& tracking) {
 				// indices can be negative to count backwards from the top of the stack,
 				// rather than the bottom up
 				// to deal with this, we adjust the index to
@@ -40,7 +41,7 @@ namespace sol {
 
 		template <>
 		struct getter<cts::vec2> {
-			CTS_LUA_API static cts::vec2 get(lua_State* L, int index, record& tracking) {
+			static cts::vec2 get(lua_State* L, int index, record& tracking) {
 				int absolute_index = lua_absindex(L, index);
 				// Get the first element
 				double x = stack::get<double>(L, absolute_index);
@@ -55,7 +56,7 @@ namespace sol {
 
 		template <>
 		struct pusher<cts::vec2> {
-			CTS_LUA_API static int push(lua_State* L, const cts::vec2& things) {
+			static int push(lua_State* L, const cts::vec2& things) {
 				int amount = stack::push(L, things[0]);
 				// amount will be 1: int pushes 1 item
 				amount += stack::push(L, things[1]);
@@ -78,6 +79,8 @@ namespace cts
 		{
 			static void registerWith(sol::state& luaState);
 		};
+
+		CTS_LUA_API extern std::recursive_mutex globalInterpreterLock;
 	}
 }
 

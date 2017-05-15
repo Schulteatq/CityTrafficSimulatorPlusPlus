@@ -1,4 +1,5 @@
 ﻿#include <cts-gui/tools/luaitemmodel.h>
+#include <cts-lua/cts-lua.h>
 
 #include <cassert>
 
@@ -392,18 +393,22 @@ namespace cts { namespace gui {
 	{
 		beginResetModel();
 
-		delete m_rootItem;
-		m_rootItem = new LuaTreeRootItem();
+		{
+			std::lock_guard<std::recursive_mutex> lock(lua::globalInterpreterLock);
 
-		if (luaVmState)
-			new LuaTreeItemTable(modelStyle, false, luaVmState->globals(), "[Global Variables]", sol::type::table, m_rootItem);
+			delete m_rootItem;
+			m_rootItem = new LuaTreeRootItem();
+
+			if (luaVmState)
+				new LuaTreeItemTable(modelStyle, false, luaVmState->globals(), "[Global Variables]", sol::type::table, m_rootItem);
 		
-		//sol::object mt = luaVmState->registry()["sol.cts::core::Network.user"];
-		//bool v = mt.valid();
-		//auto t = mt.get_type();
-		//auto ptr = mt.as< sol::light<sol::usertype_metatable_core> >();
-		//auto t = typeid(*ptr).name();
-		//sol::usertype_metatable_core* umc = static_cast<sol::usertype_metatable_core*>(ptr);
+			//sol::object mt = luaVmState->registry()["sol.cts::core::Network.user"];
+			//bool v = mt.valid();
+			//auto t = mt.get_type();
+			//auto ptr = mt.as< sol::light<sol::usertype_metatable_core> >();
+			//auto t = typeid(*ptr).name();
+			//sol::usertype_metatable_core* umc = static_cast<sol::usertype_metatable_core*>(ptr);
+		}
 
 		endResetModel();
 	}

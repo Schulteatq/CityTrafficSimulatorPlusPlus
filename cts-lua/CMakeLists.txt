@@ -22,7 +22,7 @@ target_include_directories(cts-lua
 )
 
 if(BUILD_SHARED_LIBS)
-  add_definitions("-DCTS_LUA_BUILD_SHARED_LIBS")
+  target_compile_definitions(cts-lua PUBLIC "CTS_LUA_BUILD_SHARED_LIBS")
 endif()
 set_target_properties (cts-lua PROPERTIES DEFINE_SYMBOL "CTS_LUA_EXPORTS")
 

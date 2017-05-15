@@ -27,10 +27,12 @@ namespace cts
 		{
 			m_connection = signal.connect(
 				[this](ArgTypes... args) {
+					std::lock_guard<std::recursive_mutex> lock(lua::globalInterpreterLock);
 					m_slot(std::forward<ArgTypes>(args)...);
 				},
 				[this](core::SignalConnection* c) {
 					assert(c == m_connection);
+					std::lock_guard<std::recursive_mutex> lock(lua::globalInterpreterLock);
 					m_slot = sol::protected_function();
 					m_connection = nullptr;
 				}
@@ -106,6 +108,12 @@ namespace cts
 	}
 
 
+	// ================================================================================================
+
+
+	CTS_LUA_API std::recursive_mutex lua::globalInterpreterLock;
+
+
 	void lua::Registration::registerWith(sol::state& luaState)
 	{
 		sol::table ctsNamespace = luaState.create_table("cts");
@@ -168,7 +176,7 @@ namespace cts
 
 			// functions
 			, "globalTrafficMultiplier", sol::property(&core::TrafficManager::getGlobalTrafficMultiplier, &core::TrafficManager::setGlobalTrafficMultiplier)
-			);
+		);
 
 	}
 

@@ -29,7 +29,7 @@ endif()
 
 set_target_properties(cts-gui PROPERTIES DEFINE_SYMBOL "CTS_GUI_EXPORTS")
 if(BUILD_SHARED_LIBS)
-  target_compile_definitions(cts-gui PRIVATE "-DCTS_GUI_BUILD_SHARED_LIBS")
+  target_compile_definitions(cts-gui PUBLIC "-DCTS_GUI_BUILD_SHARED_LIBS")
 endif()
 
 

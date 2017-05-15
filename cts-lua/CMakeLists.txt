@@ -10,7 +10,7 @@ file(GLOB_RECURSE Headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 
 add_library(cts-lua ${Sources} ${Headers})
 target_link_libraries(cts-lua PUBLIC liblua cts-core)
-
+target_compile_definitions(cts-lua PUBLIC "SOL_CHECK_ARGUMENTS")
 target_include_directories(cts-lua
   PRIVATE
     ${CtsGlobalIncludeDirs}

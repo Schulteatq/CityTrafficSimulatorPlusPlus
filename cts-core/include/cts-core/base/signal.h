@@ -20,14 +20,15 @@ namespace cts { namespace core
 	 */
 	class CTS_CORE_API SignalReceiver
 	{
-		// Declare SignalConnection as friend so that it can access addConnection() and removeConnection().
-		friend struct SignalConnection;
+		// Declare Signal as friend so that it can access addConnection() and removeConnection().
+		template<typename... ArgTypes>
+		friend class Signal;
 
 	public:
 		/// Default constructor
 		SignalReceiver();
 
-		/// Copy constructor, does not copy any existing signal connections from \a other.
+		/// Copy constructor, does \e not copy any existing signal connections from \a other.
 		SignalReceiver(const SignalReceiver& other);
 
 		/// Assignment operator, disconnects all existing connections, does not copy any existing signal connections from \a other.
@@ -47,7 +48,6 @@ namespace cts { namespace core
 
 
 		std::vector<SignalConnection*> m_connectedSignals;    ///< List of all incoming connections, we do not own these pointers.
-		bool m_isDeleting;                                    ///< Flag whether this class is currently in the destructor. Used to avoid removing connections while iterating over the list of connections.
 	};
 
 
@@ -75,17 +75,28 @@ namespace cts { namespace core
 	 */
 	struct CTS_CORE_API SignalConnection
 	{
+		/// Typedef for a function to be called on the slot on disconnection.
+		using DisconnectFunc = std::function<void(SignalConnection*)>;
+
 		/// Constructor for a connection between the given signal and slot.
 		/// If the given slot is not 0, the connection will register with it.
-		/// \param  signal  Pointer to the signal, must not be 0.
-		/// \param  slot    Pointer to the slot, may be 0 in the case that the slot is a free function.
-		SignalConnection(SignalBase* signal, SignalReceiver* slot);
+		/// \param  signal			Pointer to the signal, must not be 0.
+		/// \param  slot			Pointer to the slot, may be 0 in the case that the slot is a free function.
+		/// \param  disconnectFunc	Optional function that should be used to notify the slot that the connection 
+		///							is destroyed, may be 0.
+		SignalConnection(SignalBase& signal, SignalReceiver* slot, DisconnectFunc&& disconnectFunc);
 
 		/// Destructor will deregister from the connected slot.
 		~SignalConnection();
 
-		SignalBase* m_signal;       ///< Pointer to the signal, must not be 0.
-		SignalReceiver* m_slot;     ///< Pointer to the slot, may be 0 in the case that the slot is a free function.
+		/// Removes the connection between signal and slot.
+		/// \note	The object on which you call this function will be deleted and no longer exist 
+		///			when this function returns.
+		void disconnect();
+
+		SignalBase* m_signal;				///< Pointer to the signal, must not be 0.
+		SignalReceiver* m_slot;				///< Pointer to the slot, may be 0 in the case that the slot is a free function.
+		DisconnectFunc m_disconnectFunc;	///< Optional function that should be used to notify the slot that the connection is destroyed.
 	};
 
 
@@ -126,16 +137,16 @@ namespace cts { namespace core
 
 
 		/// Default constructor
-		Signal() {}
+		Signal() = default;
 
-		/// Copy constructor, copies all connections from \a other.
+		/// Copy constructor, does \e not copy any connections from \a other.
 		Signal(const Signal<ArgTypes...>& other);
 
-		/// Assignment operator, disconnects all existing connections, copies all connections from \a other.
+		/// Assignment operator, disconnects all existing connections, does \e not copy any connections from \a other.
 		Signal<ArgTypes...>& operator=(Signal<ArgTypes...> rhs);
 
 		/// Virtual destructor, deletes all connections and thereby also disconnects from all connected slots.
-		virtual ~Signal() {}
+		virtual ~Signal() = default;
 
 
 		/// Connects the given method pointer as slot to this signal.
@@ -151,7 +162,8 @@ namespace cts { namespace core
 		SignalConnection* connect(T* object, void (T::*methodptr)(ArgTypes...));
 
 		/// Connects the given free function as slot to this signal.
-		/// \param  func    Function to call on emitSignal().
+		/// \param  func			Function to call on emitSignal().
+		/// \param	disconnectFunc	Optional function to call when the connection is deleted.
 		/// \return SignalConnection object for identifying the established signal-slot connection. You can use 
 		///			this when calling disconnect(). The returned pointer is owned by the signal and will be invalid 
 		///			as soon as the signal is destroyed.
@@ -159,8 +171,8 @@ namespace cts { namespace core
 		/// \note   This overload is potentially dangerous, since there is no way for this signal 
 		///         to track the lifetime of \a func. Thus, you have to ensure that func will 
 		///         remain valid for the entire lifetime of this signal or use disconnect() with 
-		///         the returned connection object when needed.
-		SignalConnection* connect(FunctionType func);
+		///         the returned connection object when needed. 
+		SignalConnection* connect(FunctionType func, SignalConnection::DisconnectFunc&& disconnectFunc = nullptr);
 
 		/// Removes the given connection.
 		/// \param  object  Pointer to the SignalConnection object returned during connect().
@@ -195,10 +207,7 @@ namespace cts { namespace core
 
 	template<typename... ArgTypes>
 	Signal<ArgTypes...>::Signal(const Signal<ArgTypes...>& other)
-	{
-		for (auto& p : other.m_connectedSlots)
-			m_connectedSlots.emplace_back(std::make_unique<SignalConnection>(this, p.first->m_slot), p.second);
-	}
+	{}
 
 
 	template<typename... ArgTypes>
@@ -208,23 +217,26 @@ namespace cts { namespace core
 		std::swap(m_connectedSlots, rhs.m_connectedSlots);
 		return *this;
 	}
-
+	
 
 	template<typename... ArgTypes>
 	template<typename T>
 	SignalConnection* Signal<ArgTypes...>::connect(T* object, void (T::*methodptr)(ArgTypes...))
 	{
 		static_assert(std::is_base_of<SignalReceiver, T>::value, "The class of the connected member function must derive from SignalReceiver!");
-		auto connection = new SignalConnection(this, object);
-		m_connectedSlots.emplace_back(std::unique_ptr<SignalConnection>(connection), [object, methodptr](ArgTypes... args) { return (object->*methodptr)(std::forward<ArgTypes>(args)...); });
-		return connection;
+
+		auto connection = std::make_unique<SignalConnection>(*this, object, [object](SignalConnection* c) { object->removeConnection(c); });
+		auto toReturn = connection.get();
+		object->addConnection(toReturn);
+		m_connectedSlots.emplace_back(std::move(connection), [object, methodptr](ArgTypes... args) { return (object->*methodptr)(std::forward<ArgTypes>(args)...); });
+		return toReturn;
 	}
 
 
 	template<typename... ArgTypes>
-	SignalConnection* Signal<ArgTypes...>::connect(FunctionType func)
+	SignalConnection* Signal<ArgTypes...>::connect(FunctionType func, SignalConnection::DisconnectFunc&& disconnectFunction /*= nullptr*/)
 	{
-		auto connection = new SignalConnection(this, nullptr);
+		auto connection = new SignalConnection(*this, nullptr, std::move(disconnectFunction));
 		m_connectedSlots.emplace_back(std::unique_ptr<SignalConnection>(connection), std::move(func));
 		return connection;
 	}

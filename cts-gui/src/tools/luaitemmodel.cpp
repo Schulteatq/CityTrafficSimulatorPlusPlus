@@ -130,19 +130,17 @@ namespace cts { namespace gui {
 
 	QString LuaTreeItemLeaf::getValue() const
 	{
-		if (m_type == sol::type::string || m_type == sol::type::number || m_type == sol::type::boolean)
+		switch (m_type)
 		{
+		case sol::type::string:
 			return QString::fromStdString(m_parentTable[m_name].get<std::string>());
+		case sol::type::number:
+			return QString::number(m_parentTable[m_name].get<double>());
+		case sol::type::boolean:
+			return m_parentTable[m_name].get<bool>() ? "true" : "false";
+		default:
+			return "";
 		}
-		else if (m_type == sol::type::userdata)
-		{
-			return "<userdata>";
-		}
-		else if (m_type == sol::type::lightuserdata)
-		{
-			return "<light userdata>";
-		}
-		return "";
 	}
 
 
@@ -400,12 +398,12 @@ namespace cts { namespace gui {
 		if (luaVmState)
 			new LuaTreeItemTable(modelStyle, false, luaVmState->globals(), "[Global Variables]", sol::type::table, m_rootItem);
 		
-		sol::object mt = luaVmState->registry()["sol.cts::core::Network.user"];
-		bool v = mt.valid();
-		auto t = mt.get_type();
-		auto ptr = mt.as< sol::light<sol::usertype_metatable_core> >();
+		//sol::object mt = luaVmState->registry()["sol.cts::core::Network.user"];
+		//bool v = mt.valid();
+		//auto t = mt.get_type();
+		//auto ptr = mt.as< sol::light<sol::usertype_metatable_core> >();
 		//auto t = typeid(*ptr).name();
-		sol::usertype_metatable_core* umc = static_cast<sol::usertype_metatable_core*>(ptr);
+		//sol::usertype_metatable_core* umc = static_cast<sol::usertype_metatable_core*>(ptr);
 
 		endResetModel();
 	}

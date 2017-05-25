@@ -38,7 +38,7 @@ namespace cts { namespace core
 	double IdmMobil::getAcceleration(double velocity, double desiredVelocity, double distance, double vDiff) const
 	{
 		double ss = getDesiredDistance(velocity, vDiff);
-		return m_maximumAcceleration * (1.0 - pow(velocity / desiredVelocity, 2.0)) - sqrt(ss / distance);
+		return m_maximumAcceleration * (1.0 - pow(velocity / desiredVelocity, 2.0) - sqrt(ss / distance));
 	}
 
 

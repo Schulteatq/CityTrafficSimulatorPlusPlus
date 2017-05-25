@@ -7,13 +7,11 @@ namespace cts { namespace core
 {
 
 	SignalReceiver::SignalReceiver()
-		: m_isDeleting(false)
 	{
 	}
 
 
 	SignalReceiver::SignalReceiver(const SignalReceiver& /*other*/) 
-		: m_isDeleting(false)
 	{
 	}
 	
@@ -22,16 +20,17 @@ namespace cts { namespace core
 	{
 		// copy and swap paradigm as described by Scott Meyers.
 		std::swap(m_connectedSignals, rhs.m_connectedSignals);
-		std::swap(m_isDeleting, rhs.m_isDeleting);
 		return *this;
 	}
 
 
 	SignalReceiver::~SignalReceiver()
 	{
-		m_isDeleting = true;
 		for (auto& c : m_connectedSignals)
-			c->m_signal->disconnect(c);
+		{
+			c->m_disconnectFunc = nullptr;
+			c->disconnect();
+		}
 	}
 
 
@@ -43,30 +42,33 @@ namespace cts { namespace core
 
 	void SignalReceiver::removeConnection(SignalConnection* connection)
 	{
-		if (!m_isDeleting)
-		{
-			utils::remove_erase(m_connectedSignals, connection);
-		}
+		utils::remove_erase(m_connectedSignals, connection);
 	}
 
 
 	// ================================================================================================
 
 
-	SignalConnection::SignalConnection(SignalBase* signal, SignalReceiver* slot)
-		: m_signal(signal)
+	SignalConnection::SignalConnection(SignalBase& signal, SignalReceiver* slot, DisconnectFunc&& slotDisconnecter)
+		: m_signal(&signal)
 		, m_slot(slot)
+		, m_disconnectFunc(std::move(slotDisconnecter))
 	{
-		if (m_slot != nullptr)
-			m_slot->addConnection(this);
 	}
 
 
 	SignalConnection::~SignalConnection()
 	{
-		if (m_slot != nullptr)
-			m_slot->removeConnection(this);
+		if (m_disconnectFunc)
+			m_disconnectFunc(this);
 	}
+
+
+	void SignalConnection::disconnect()
+	{
+		m_signal->disconnect(this);
+	}
+
 
 }
 }

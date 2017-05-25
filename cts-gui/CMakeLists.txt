@@ -23,9 +23,13 @@ target_include_directories(cts-gui
 # Define the libraries this project depends upon
 target_link_libraries(cts-gui PRIVATE cts-core Qt5::Widgets)
 
+if(ENABLE_SCRIPTING)
+  target_link_libraries(cts-gui PRIVATE cts-lua)
+endif()
+
 set_target_properties(cts-gui PROPERTIES DEFINE_SYMBOL "CTS_GUI_EXPORTS")
 if(BUILD_SHARED_LIBS)
-  target_compile_definitions(cts-gui PRIVATE "-DCTS_GUI_BUILD_SHARED_LIBS")
+  target_compile_definitions(cts-gui PUBLIC "-DCTS_GUI_BUILD_SHARED_LIBS")
 endif()
 
 

@@ -37,6 +37,18 @@ namespace cts { namespace core
 	TrafficManager::~TrafficManager() {}
 
 
+	double TrafficManager::getGlobalTrafficMultiplier() const
+	{
+		return m_globalTrafficMultiplier;
+	}
+
+
+	void TrafficManager::setGlobalTrafficMultiplier(double value)
+	{
+		m_globalTrafficMultiplier = value;
+	}
+
+
 	void TrafficManager::clearVehicles()
 	{
 		m_vehicles.clear();

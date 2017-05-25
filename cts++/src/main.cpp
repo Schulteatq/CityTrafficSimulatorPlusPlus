@@ -5,11 +5,15 @@
 #include <cts-gui/mainwindow.h>
 #include <cts-gui/networkrenderwidget.h>
 
+#include <cts-lua/cts-lua.h>
+
 #include <QtWidgets/QApplication>
 
 #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <lua.hpp>
+#include <sol.hpp>
 
 int main(int argc, char** argv)
 {
@@ -24,12 +28,20 @@ int main(int argc, char** argv)
 	cts::core::Simulation simulation(network);
 	simulation.start(1000);
 
+	sol::state lua;
+	lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::os, sol::lib::table, sol::lib::string, sol::lib::debug);
+	lua.script_file("inspect.lua");
+	cts::lua::Registration::registerWith(lua);
+
 	QApplication app(argc, argv);
-	cts::gui::MainWindow mw;
+	cts::gui::MainWindow mw(&lua);
 	mw.getNetworkRenderWidget()->setNetwork(&network);
 	mw.getNetworkRenderWidget()->setSimulation(&simulation);
 	mw.show();
 	mw.showMaximized();
+
+	lua["n"] = &network;
+	lua["s"] = &simulation;
 
 	return app.exec();
 }

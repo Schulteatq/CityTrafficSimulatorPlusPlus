@@ -17,7 +17,7 @@ namespace cts { namespace core
 	class Network;
 	class Randomizer;
 
-	class CTS_CORE_API Simulation
+	class CTS_CORE_API Simulation : public utils::NotCopyable
 	{
 	public:
 		Simulation(Network& network);

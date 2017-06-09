@@ -23,6 +23,8 @@ namespace cts { namespace core
 	public:
 		/// Alias for the vector type
 		using VectorType = Eigen::Matrix<T, N, 1>;
+		/// Alias for this very type
+		using ThisType = Bounds<T, N>;
 
 		/// Creates an empty bounding box that does not contain any point and does not intersect with anything.
 		Bounds()
@@ -58,6 +60,12 @@ namespace cts { namespace core
 			}
 		}
 
+		/// Equals operator, compares LLF and URB.
+		bool operator==(const ThisType& rhs) const
+		{
+			return (m_llf == rhs.m_llf && m_urb == rhs.m_urb);
+		}
+
 		/// Returns the lower-left-front corner (component-wise minimum) of the bounding box.
 		const VectorType& getLlf() const { return m_llf; }
 		/// Returns the upper-right-back corner (component-wise maximum) of the bounding box.
@@ -90,7 +98,7 @@ namespace cts { namespace core
 		}
 
 		/// Returns whether the bounding box intersects the given other bounding box.
-		bool intersects(const Bounds<T, N>& other) const
+		bool intersects(const ThisType& other) const
 		{
 			for (int i = 0; i < VectorType::RowsAtCompileTime; ++i)
 			{
@@ -116,7 +124,7 @@ namespace cts { namespace core
 	template<typename T, size_t N>
 	std::ostream& operator<< (std::ostream& o, const Bounds<T, N>& b)
 	{
-		return (o << "(LLF: " << b.getLLF() << " URB: " << b.getURB() << ")");
+		return (o << "(LLF: " << b.getLlf() << " URB: " << b.getUrb() << ")");
 	}
 
 	/// Alias for the default 2D axis aligned bounding box.

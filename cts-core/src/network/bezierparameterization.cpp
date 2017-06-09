@@ -88,9 +88,9 @@ namespace core
 	double BezierParameterization::arcPositionToTime(double position) const
 	{
 		if (position <= m_lengthApproximationTable[0])
-			return m_lengthApproximationTable[0];
+			return 0.0;
 		else if (position >= m_lengthApproximationTable.back())
-			return m_lengthApproximationTable.back();
+			return 1.0;
 
 		auto it = std::lower_bound(m_lengthApproximationTable.begin(), m_lengthApproximationTable.end(), position);
 		assert(it != m_lengthApproximationTable.end() && it != m_lengthApproximationTable.begin());
@@ -129,7 +129,7 @@ namespace core
 		double sum = 0.0;
 		for (int i = 0; i < LengthApproximationTableSize; ++i)
 		{
-			double t = double(i) / LengthApproximationTableSize;
+			double t = double(i) / (LengthApproximationTableSize - 1);
 			auto currentPoint = timeToCoordinate(t);
 
 			sum += (currentPoint - lastPoint).norm();

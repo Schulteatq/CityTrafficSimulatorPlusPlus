@@ -24,6 +24,7 @@ namespace cts
 		LuaSignalConnection(core::Signal<ArgTypes...>& signal, sol::protected_function luaFunction)
 			: m_slot(std::move(luaFunction))
 			, m_connection(nullptr)
+			, m_isDeleting(false)
 		{
 			m_connection = signal.connect(
 				[this](ArgTypes... args) {
@@ -31,19 +32,22 @@ namespace cts
 					m_slot(std::forward<ArgTypes>(args)...);
 				},
 				[this](core::SignalConnection* c) {
-					assert(c == m_connection);
-					std::lock_guard<std::recursive_mutex> lock(lua::globalInterpreterLock);
-					m_slot = sol::protected_function();
-					m_connection = nullptr;
+					if (!m_isDeleting)
+					{
+						assert(c == m_connection);
+						std::lock_guard<std::recursive_mutex> lock(lua::globalInterpreterLock);
+						m_slot = sol::protected_function();
+						m_connection = nullptr;
+					}
 				}
 			);
 		}
 
 		~LuaSignalConnection()
 		{
+			m_isDeleting = true;
 			if (m_connection)
 			{
-				m_connection->m_disconnectFunc = nullptr;
 				m_connection->disconnect();
 			}
 		}
@@ -52,6 +56,7 @@ namespace cts
 	private:
 		sol::protected_function m_slot;
 		core::SignalConnection* m_connection;
+		bool m_isDeleting;
 	};
 
 

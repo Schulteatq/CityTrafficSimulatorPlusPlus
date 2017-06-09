@@ -7,30 +7,54 @@ namespace cts { namespace core
 {
 
 	SignalReceiver::SignalReceiver()
+		: m_isDeleting(false)
 	{
 	}
 
 
-	SignalReceiver::SignalReceiver(const SignalReceiver& /*other*/) 
+	SignalReceiver::SignalReceiver(const SignalReceiver& other)
+		: m_isDeleting(false)
 	{
+		for (auto& c : other.m_connectedSignals)
+		{
+			c->clone(this);
+		}
 	}
 	
 
-	SignalReceiver& SignalReceiver::operator=(SignalReceiver rhs)
+	SignalReceiver& SignalReceiver::operator=(const SignalReceiver& rhs)
 	{
-		// copy and swap paradigm as described by Scott Meyers.
-		std::swap(m_connectedSignals, rhs.m_connectedSignals);
+		if (&rhs == this)
+			return *this;
+
+		m_isDeleting = true;
+		for (auto& c : m_connectedSignals)
+		{
+			c->disconnect();
+		}
+		m_isDeleting = false;
+
+		for (auto& c : rhs.m_connectedSignals)
+		{
+			c->clone(this);
+		}
 		return *this;
 	}
 
 
 	SignalReceiver::~SignalReceiver()
 	{
+		m_isDeleting = true;
 		for (auto& c : m_connectedSignals)
 		{
-			c->m_disconnectFunc = nullptr;
 			c->disconnect();
 		}
+	}
+
+
+	size_t SignalReceiver::numConnections() const
+	{
+		return m_connectedSignals.size();
 	}
 
 
@@ -42,17 +66,20 @@ namespace cts { namespace core
 
 	void SignalReceiver::removeConnection(SignalConnection* connection)
 	{
-		utils::remove_erase(m_connectedSignals, connection);
+		if (!m_isDeleting)
+			utils::remove_erase(m_connectedSignals, connection);
 	}
 
 
 	// ================================================================================================
 
 
-	SignalConnection::SignalConnection(SignalBase& signal, SignalReceiver* slot, DisconnectFunc&& slotDisconnecter)
+	SignalConnection::SignalConnection(SignalBase& signal, SignalReceiver* slot, DisconnectFunc slotDisconnecter, CloneSignalFunc&& cloneSignalFunc, CloneSlotFunc&& cloneSlotFunc)
 		: m_signal(&signal)
 		, m_slot(slot)
 		, m_disconnectFunc(std::move(slotDisconnecter))
+		, m_cloneSignalFunc(std::move(cloneSignalFunc))
+		, m_cloneSlotFunc(std::move(cloneSlotFunc))
 	{
 	}
 
@@ -67,6 +94,22 @@ namespace cts { namespace core
 	void SignalConnection::disconnect()
 	{
 		m_signal->disconnect(this);
+	}
+
+
+	SignalConnection* SignalConnection::clone(SignalBase& newSignal) const
+	{
+		if (m_cloneSignalFunc)
+			return m_cloneSignalFunc(newSignal);
+		return nullptr;
+	}
+
+
+	SignalConnection* SignalConnection::clone(SignalReceiver* newSlot)
+	{
+		if (m_cloneSlotFunc)
+			return m_cloneSlotFunc(newSlot);
+		return nullptr;
 	}
 
 

@@ -3,6 +3,7 @@
 
 #include <cts-core/coreapi.h>
 
+#include <cassert>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -24,6 +25,9 @@ namespace cts { namespace core
 		template<typename... ArgTypes>
 		friend class Signal;
 
+		template<typename... ArgTypes>
+		friend struct TypedSignalConnection;
+
 	public:
 		/// Default constructor
 		SignalReceiver();
@@ -32,10 +36,13 @@ namespace cts { namespace core
 		SignalReceiver(const SignalReceiver& other);
 
 		/// Assignment operator, disconnects all existing connections, does not copy any existing signal connections from \a other.
-		SignalReceiver& operator=(SignalReceiver rhs);
+		SignalReceiver& operator=(const SignalReceiver& rhs);
 
 		/// Virtual destructor disconnects from all connected signals.
 		virtual ~SignalReceiver();
+
+		/// Returns the current number of connections.
+		size_t numConnections() const;
 
 	private:
 		/// Registers the given connection with this object.
@@ -48,6 +55,7 @@ namespace cts { namespace core
 
 
 		std::vector<SignalConnection*> m_connectedSignals;    ///< List of all incoming connections, we do not own these pointers.
+		bool m_isDeleting;
 	};
 
 
@@ -75,8 +83,16 @@ namespace cts { namespace core
 	 */
 	struct CTS_CORE_API SignalConnection
 	{
+		template<typename... ArgTypes>
+		friend class Signal;
+		friend class SignalReceiver;
+
 		/// Typedef for a function to be called on the slot on disconnection.
 		using DisconnectFunc = std::function<void(SignalConnection*)>;
+		/// Typedef for a function to be called when the owning signal is cloned.
+		using CloneSignalFunc = std::function<SignalConnection*(SignalBase&)>;
+		/// Typedef for a function to be called when the target slot is cloned.
+		using CloneSlotFunc = std::function<SignalConnection*(SignalReceiver*)>;
 
 		/// Constructor for a connection between the given signal and slot.
 		/// If the given slot is not 0, the connection will register with it.
@@ -84,19 +100,25 @@ namespace cts { namespace core
 		/// \param  slot			Pointer to the slot, may be 0 in the case that the slot is a free function.
 		/// \param  disconnectFunc	Optional function that should be used to notify the slot that the connection 
 		///							is destroyed, may be 0.
-		SignalConnection(SignalBase& signal, SignalReceiver* slot, DisconnectFunc&& disconnectFunc);
+		SignalConnection(SignalBase& signal, SignalReceiver* slot, DisconnectFunc disconnectFunc = nullptr, CloneSignalFunc&& cloneSignalFunc = nullptr, CloneSlotFunc&& cloneSlotFunc = nullptr);
 
 		/// Destructor will deregister from the connected slot.
-		~SignalConnection();
+		virtual ~SignalConnection();
 
 		/// Removes the connection between signal and slot.
 		/// \note	The object on which you call this function will be deleted and no longer exist 
 		///			when this function returns.
 		void disconnect();
 
+	protected:
+		virtual SignalConnection* clone(SignalBase& newSignal) const;
+		virtual SignalConnection* clone(SignalReceiver* newSlot);
+
 		SignalBase* m_signal;				///< Pointer to the signal, must not be 0.
 		SignalReceiver* m_slot;				///< Pointer to the slot, may be 0 in the case that the slot is a free function.
 		DisconnectFunc m_disconnectFunc;	///< Optional function that should be used to notify the slot that the connection is destroyed.
+		CloneSignalFunc m_cloneSignalFunc;	///< Optional function that should be used when the owning signal is cloned.
+		CloneSlotFunc m_cloneSlotFunc;		///< Optional function that should be used when the target slot is cloned.
 	};
 
 
@@ -116,8 +138,8 @@ namespace cts { namespace core
 	 * slot (i.e. member function) multiple times to the same signal, that function will be called as 
 	 * many times as there are connections.
 	 * 
-	 * In contrast to SignalReceiver, Signal will copy SignalConnections when calling its copy 
-	 * constructor and/or its assignment operator.
+	 * Signal will duplicate existing SignalConnections when calling its copy constructor and/or its 
+	 * assignment operator.
 	 *
 	 * \tparam  ArgTypes    Signature of the signal/function to call.
 	 *
@@ -172,7 +194,7 @@ namespace cts { namespace core
 		///         to track the lifetime of \a func. Thus, you have to ensure that func will 
 		///         remain valid for the entire lifetime of this signal or use disconnect() with 
 		///         the returned connection object when needed. 
-		SignalConnection* connect(FunctionType func, SignalConnection::DisconnectFunc&& disconnectFunc = nullptr);
+		SignalConnection* connect(FunctionType func, SignalConnection::DisconnectFunc disconnectFunc = nullptr);
 
 		/// Removes the given connection.
 		/// \param  object  Pointer to the SignalConnection object returned during connect().
@@ -182,11 +204,11 @@ namespace cts { namespace core
 		/// Disconnects all slots of the given object from this signal.
 		/// \param  object  Pointer to the object holding the slot.
 		/// \return The number of connections that were found and deleted.
-		int disconnect(SignalReceiver* object);
+		size_t disconnect(SignalReceiver* object);
 
 		/// Disconnects all slots from this signal
 		/// \return The number of connections that were found and deleted.
-		int disconnectAll();
+		size_t disconnectAll();
 
 
 		/// Calls all connected slots with the given arguments.
@@ -194,9 +216,11 @@ namespace cts { namespace core
 
 
 		/// Returns the current number of connections.
-		int numConnections() const;
+		size_t numConnections() const;
 
 	private:		
+		using ThisType = Signal<ArgTypes...>;
+
 		/// The list of all outgoing connections.
 		ConnectionListType m_connectedSlots;
 	};
@@ -207,7 +231,13 @@ namespace cts { namespace core
 
 	template<typename... ArgTypes>
 	Signal<ArgTypes...>::Signal(const Signal<ArgTypes...>& other)
-	{}
+	{
+		/// clone all connections
+		for (auto& c : other.m_connectedSlots)
+		{
+			c.first->clone(*this);
+		}
+	}
 
 
 	template<typename... ArgTypes>
@@ -225,18 +255,24 @@ namespace cts { namespace core
 	{
 		static_assert(std::is_base_of<SignalReceiver, T>::value, "The class of the connected member function must derive from SignalReceiver!");
 
-		auto connection = std::make_unique<SignalConnection>(*this, object, [object](SignalConnection* c) { object->removeConnection(c); });
+		auto connection = std::make_unique<SignalConnection>(*this, object);
+		connection->m_disconnectFunc = [object](SignalConnection* c) { object->removeConnection(c); };
+		connection->m_cloneSignalFunc = [object, methodptr](SignalBase& newSignal) { assert(dynamic_cast<ThisType*>(&newSignal)); return static_cast<ThisType&>(newSignal).connect(object, methodptr); };
+		connection->m_cloneSlotFunc = [this, methodptr](SignalReceiver* newReceiver) { /* cannot assert type since object is not yet fully constructed... */ return this->connect(static_cast<T*>(newReceiver), methodptr); };
+
 		auto toReturn = connection.get();
-		object->addConnection(toReturn);
 		m_connectedSlots.emplace_back(std::move(connection), [object, methodptr](ArgTypes... args) { return (object->*methodptr)(std::forward<ArgTypes>(args)...); });
+		object->addConnection(toReturn);
+		
 		return toReturn;
 	}
 
 
 	template<typename... ArgTypes>
-	SignalConnection* Signal<ArgTypes...>::connect(FunctionType func, SignalConnection::DisconnectFunc&& disconnectFunction /*= nullptr*/)
+	SignalConnection* Signal<ArgTypes...>::connect(FunctionType func, SignalConnection::DisconnectFunc disconnectFunction /*= nullptr*/)
 	{
-		auto connection = new SignalConnection(*this, nullptr, std::move(disconnectFunction));
+		auto connection = new SignalConnection(*this, nullptr, disconnectFunction);
+		connection->m_cloneSignalFunc = [func, disconnectFunction](SignalBase& newSignal) { assert(dynamic_cast<ThisType*>(&newSignal)); return static_cast<ThisType&>(newSignal).connect(func, disconnectFunction); };
 		m_connectedSlots.emplace_back(std::unique_ptr<SignalConnection>(connection), std::move(func));
 		return connection;
 	}
@@ -263,7 +299,7 @@ namespace cts { namespace core
 
 
 	template<typename... ArgTypes>
-	int Signal<ArgTypes...>::disconnect(SignalReceiver* object)
+	size_t Signal<ArgTypes...>::disconnect(SignalReceiver* object)
 	{
 		if (m_connectedSlots.empty())
 			return 0;
@@ -273,25 +309,25 @@ namespace cts { namespace core
 		if (rangeStart == m_connectedSlots.end())
 			return 0;
 
-		int numElem = int(std::distance(rangeStart, m_connectedSlots.end()));
+		size_t numElem = std::distance(rangeStart, m_connectedSlots.end());
 		m_connectedSlots.erase(rangeStart, m_connectedSlots.end());
 		return numElem;
 	}
 
 
 	template<typename... ArgTypes>
-	int Signal<ArgTypes...>::disconnectAll()
+	size_t Signal<ArgTypes...>::disconnectAll()
 	{
-		int numElem = int(m_connectedSlots.size());
+		size_t numElem = m_connectedSlots.size();
 		m_connectedSlots.clear();
 		return numElem;
 	}
 
 
 	template<typename... ArgTypes>
-	int Signal<ArgTypes...>::numConnections() const
+	size_t Signal<ArgTypes...>::numConnections() const
 	{
-		return int(m_connectedSlots.size());
+		return m_connectedSlots.size();
 	}
 
 }

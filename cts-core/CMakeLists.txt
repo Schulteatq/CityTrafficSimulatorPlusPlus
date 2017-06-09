@@ -40,3 +40,9 @@ target_link_libraries(cts-core PRIVATE tinyxml2)
 
 DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsCoreSources ${CtsHome}/cts-core "src")
 DEFINE_SOURCE_GROUPS_FROM_SUBDIR(CtsCoreHeaders ${CtsHome}/cts-core "include/cts-core")
+
+
+
+if(ENABLE_TESTING)
+    add_subdirectory(test)
+endif()

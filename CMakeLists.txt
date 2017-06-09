@@ -4,6 +4,7 @@ include("cmake/commonconf.cmake")
 
 option(BUILD_SHARED_LIBS "Build Shared Libraries" ON)
 option(ENABLE_SCRIPTING "Enable Lua Scripting" OFF)
+option(ENABLE_TESTING "Enable Testing" ON)
 
 
 # External 3rd party libs that we include

@@ -45,17 +45,11 @@ namespace cts { namespace core
 			RandomAccessPriorityQueue() = default;
 			virtual ~RandomAccessPriorityQueue() = default;
 
-			typename std::vector<T>::iterator begin() { return c.begin(); }
-			typename std::vector<T>::iterator end() { return c.end(); }
-
-			void erase(const typename std::vector<T>::iterator& it)
+			template<typename UnaryPredicate>
+			void remove_erase_if(UnaryPredicate&& predicate)
 			{
-				if (it == end())
-					return;
-
-				std::swap(*it, *(c.end() - 1));
-				c.erase(c.end() - 1, c.end());
-				std::make_heap(it, c.end());
+				utils::remove_erase_if(c, std::move(predicate));
+				std::make_heap(c.begin(), c.end(), Comp());
 			}
 		};
 	}
@@ -67,12 +61,12 @@ namespace cts { namespace core
 	}
 
 
-	void Routing::compute(const Node& startNode, const std::vector<Node*>& destinationNodes, const AbstractVehicle& /*vehicle*/)
+	void Routing::compute(const Node& startNode, const std::vector<Node*>& destinationNodes, const AbstractVehicle& vehicle)
 	{
 		m_segments.clear();
 
 		// TODO: move these constants somewhere more central where they make sense
-		static const double VehicleOnRoutePenalty;
+		static const double VehicleOnRoutePenalty = 48.0;
 		if (destinationNodes.empty())
 			return;
 
@@ -113,7 +107,7 @@ namespace cts { namespace core
 				if (ole->numParents < 3)
 					connectionCosts += conn->getVehicles().size() * VehicleOnRoutePenalty;
 				// consider the target velocity
-				connectionCosts *= 14.0 / std::max(/*vehicle.getTargetVelocity()*/ 14.0, conn->getTargetVelocity());
+				connectionCosts *= 14.0 / std::min(vehicle.getTargetVelocity(), conn->getTargetVelocity());
 				
 				const vec2 startPosition = conn->getEndNode().getPosition();
 				const double remainingCosts = utils::reduce(destinationNodes, std::numeric_limits<double>::max(), [startPosition](double minimum, Node* node) {
@@ -123,20 +117,21 @@ namespace cts { namespace core
 				// check whether know already a better path to the end node of conn than the one we're currently examining.
 				const double fullCosts = ole->previousCosts + connectionCosts + remainingCosts;
 				bool nodeInOpenlist = false;
-				for (auto it = openList.begin(); it != openList.end(); ++it)
-				{
-					if (&(*it)->node == &conn->getEndNode())
+
+				openList.remove_erase_if([&](const std::shared_ptr<OpenListElement>& ole) {
+					if (&ole->node == &conn->getEndNode())
 					{
-						if ((*it)->heuristicFullCosts < fullCosts)
+						if (ole->heuristicFullCosts < fullCosts)
 						{
 							nodeInOpenlist = true;
 						}
 						else
 						{
-							openList.erase(it);
+							return true;
 						}
 					}
-				}
+					return false;
+				});
 
 				if (!nodeInOpenlist)
 					openList.push(std::make_shared<OpenListElement>(conn->getEndNode(), ole, ole->numParents + 1, ole->previousCosts + connectionCosts, fullCosts));

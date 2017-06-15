@@ -2,6 +2,7 @@
 #define CTS_CORE_VEHICLE_H__
 
 #include <cts-core/coreapi.h>
+#include <cts-core/base/utils.h>
 #include <cts-core/network/routing.h>
 
 #include <deque>
@@ -71,7 +72,7 @@ namespace cts { namespace core
 	protected:
 		/// Structure encapsulating a registered intersection.
 		/// Takes care of registering/unregistering.
-		struct SpecificIntersection : public utils::NotCopyable
+		struct CTS_CORE_API SpecificIntersection : public utils::NotCopyable
 		{
 			SpecificIntersection(const AbstractVehicle* vehicle, Intersection* intersection, const Connection* connection);
 			~SpecificIntersection();

@@ -145,13 +145,13 @@ namespace cts { namespace core
 				++noseIt;
 			}
 		}
-
+		
 		// All registered intersections before can be unregistered
 		if (tailIt != m_registeredIntersections.begin())
 		{
 			m_registeredIntersections.erase(m_registeredIntersections.begin(), tailIt);
 		}
-
+		
 		// gather next intersections on my route and updated their registration
 		double startPosition = m_currentArcPosition;
 		double doneDistance = 0.0;
@@ -180,7 +180,7 @@ namespace cts { namespace core
 					{
 						// This intersection is different from what I expected. Most probably due to a change in the routing.
 						// Remove this and all intersections behind. We will register with the new ones in the next loop
-						m_registeredIntersections.erase(noseIt, m_registeredIntersections.end());
+						noseIt = m_registeredIntersections.erase(noseIt, m_registeredIntersections.end());
 						break;
 					}
 				}
@@ -243,8 +243,8 @@ namespace cts { namespace core
 			else
 			{
 				m_visitedConnections.push_back(m_currentConnection);
-				setCurrentConnection(m_routing.getSegments()[1].connection);
-				updateRouting(m_currentConnection->getStartNode(), m_destinationNodes);
+				updateRouting(m_currentConnection->getEndNode(), m_destinationNodes);
+				setCurrentConnection(m_routing.getSegments()[0].connection);
 			}
 		}
 	}
